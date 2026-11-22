@@ -1,0 +1,6 @@
+{
+  "name": "Tuulit",
+  "description": "AI-powered menstrual health, wellness, comfort, and personal care companion for Android.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
