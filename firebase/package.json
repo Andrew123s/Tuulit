@@ -1,0 +1,14 @@
+{
+  "name": "tuulit-firebase-rules",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "firebase emulators:exec --only firestore --project demo-tuulit \"vitest run\""
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "4.0.1",
+    "firebase": "11.6.1",
+    "firebase-tools": "14.2.2",
+    "vitest": "3.1.3"
+  }
+}

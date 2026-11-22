@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Monochrome status-bar mark: banana silhouette. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp" android:viewportWidth="120" android:viewportHeight="120">
+    <path android:fillColor="#FFFFFFFF" android:pathData="M51 66C47 44 50 22 62 13c6-4 10 0 8 9-2 14-4 30-4 44c0 16 7 28 24 34l-4 7C62 104 48 88 49 66c-7 2-13 14-22 20 1-18 12-27 24-23zM66 63c12-9 24-6 27 7-7 0-12-4-25 1z"/>
+</vector>

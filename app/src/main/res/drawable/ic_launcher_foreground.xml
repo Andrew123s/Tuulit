@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The Tuulit mark (vector redraw of the half-peeled banana), centred in the adaptive-icon safe zone. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
+    <group android:translateX="20" android:translateY="18" android:scaleX="0.6" android:scaleY="0.6">
+        <path android:fillColor="#D6BE98" android:strokeColor="#221E1A" android:strokeWidth="3" android:strokeLineJoin="round" android:pathData="M54 63C40 55 28 63 26 86c7 0 12-12 26-15z"/>
+        <path android:fillColor="#D6BE98" android:strokeColor="#221E1A" android:strokeWidth="3" android:strokeLineJoin="round" android:pathData="M66 63c12-9 24-6 27 7-7 0-12-4-25 1z"/>
+        <path android:fillColor="#FBF7EF" android:strokeColor="#221E1A" android:strokeWidth="3" android:strokeLineJoin="round" android:pathData="M51 66C47 44 50 22 62 13c6-4 10 0 8 9-2 14-4 30-4 44z"/>
+        <path android:fillColor="#221E1A" android:pathData="M63.5 13.5a3 3 0 1 0 6 0a3 3 0 1 0 -6 0z"/>
+        <path android:fillColor="#F2C230" android:strokeColor="#221E1A" android:strokeWidth="3" android:strokeLineJoin="round" android:pathData="M49 65c-1 22 13 38 37 41l4-7c-17-6-24-18-24-34z"/>
+        <path android:fillColor="#221E1A" android:strokeColor="#221E1A" android:strokeWidth="3" android:strokeLineJoin="round" android:pathData="M86 99l5 1.5-2 7-5-1.5z"/>
+        <path android:fillColor="#F2C230" android:strokeColor="#221E1A" android:strokeWidth="3" android:strokeLineJoin="round" android:pathData="M57 64c-14 0-22 14-17 32 7 1 9-13 18-22z"/>
+        <path android:fillColor="#F2C230" android:strokeColor="#221E1A" android:strokeWidth="3" android:strokeLineJoin="round" android:pathData="M62 64c12-6 25 0 26 16-7 1-9-8-23-8z"/>
+        <path android:fillColor="#221E1A" android:pathData="M54.9 37a2.1 2.1 0 1 0 4.2 0a2.1 2.1 0 1 0 -4.2 0zM62.4 36a2.1 2.1 0 1 0 4.2 0a2.1 2.1 0 1 0 -4.2 0z"/>
+        <path android:strokeColor="#221E1A" android:strokeWidth="2.2" android:strokeLineCap="round" android:pathData="M57.5 42.5q3.8 3.4 7.4 -0.6"/>
+    </group>
+</vector>

@@ -1,0 +1,29 @@
+# Build
+*.iml
+.gradle/
+.kotlin/
+build/
+/captures
+.externalNativeBuild
+.cxx
+
+# Local config and secrets (never commit)
+local.properties
+.env
+.env.*
+app/google-services.json
+*.jks
+*.keystore
+service-account*.json
+
+# IDE
+.idea/
+.DS_Store
+
+# Backend tooling
+node_modules/
+.wrangler/
+.dev.vars
+firebase-debug.log
+firestore-debug.log
+ui-debug.log

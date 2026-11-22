@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Tuulit</string>
+    <string name="default_notification_channel">connect</string>
+</resources>

@@ -1,0 +1,33 @@
+# Tuulit API on Cloudflare Workers (free plan is enough for launch volumes).
+# Secrets are NOT in this file. Set them with:
+#   wrangler secret put AI_API_KEY
+#   wrangler secret put BREVO_API_KEY
+#   wrangler secret put FIREBASE_SERVICE_ACCOUNT   (paste the whole JSON)
+#   wrangler secret put MEDIA_SIGNING_KEY          (32+ random characters)
+name = "tuulit-api"
+main = "src/index.ts"
+compatibility_date = "2025-05-01"
+workers_dev = true
+
+[vars]
+FIREBASE_PROJECT_ID = "REPLACE_WITH_FIREBASE_PROJECT_ID"
+FIREBASE_PROJECT_NUMBER = "REPLACE_WITH_FIREBASE_PROJECT_NUMBER"
+APP_CHECK_MODE = "monitor"          # off | monitor | enforce  (enforce once Play Integrity is set up)
+AI_PROVIDER = "anthropic"           # anthropic | openai_compatible
+AI_MODEL = "claude-haiku-5-5"       # any model the provider offers; Haiku keeps cost low
+AI_DAILY_LIMIT = "60"               # questions per user per day
+BREVO_SENDER_EMAIL = "REPLACE_WITH_VERIFIED_SENDER@yourdomain"
+BREVO_SENDER_NAME = "Tuulit"
+APP_NAME = "Tuulit"
+PUBLIC_BASE_URL = "https://tuulit-api.REPLACE_WITH_SUBDOMAIN.workers.dev"
+
+[[r2_buckets]]
+binding = "MEDIA"
+bucket_name = "tuulit-media"
+
+[[kv_namespaces]]
+binding = "RATE"
+id = "REPLACE_WITH_KV_NAMESPACE_ID"
+
+[observability]
+enabled = true

@@ -1,0 +1,108 @@
+rules_version = '2';
+
+// Tuulit Firestore rules.
+// - users/{uid}/**   : private backup. Only that user can read or write. Nothing else can list it.
+// - invites/{code}   : one-time codes. Readable by exact code only; the owner creates, the invitee accepts once.
+// - connections/{id} : created by the invitee with every permission OFF; only the owner can grant permissions.
+// - shared/{id}      : the member-visible status. The owner may only write fields they have permitted.
+// The Cloudflare Worker uses the service account (admin) for FCM delivery and account deletion.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+    function isUser(uid) { return signedIn() && request.auth.uid == uid; }
+    function nowMs() { return request.time.toMillis(); }
+
+    match /users/{uid} {
+      allow read, write: if isUser(uid);
+
+      match /{collection}/{docId} {
+        allow read, delete: if isUser(uid);
+        allow create, update: if isUser(uid)
+          && collection in ['cycles', 'dailyLogs', 'painLogs', 'comfort', 'games', 'achievements', 'devices']
+          && request.resource.data.size() <= 20
+          && (!('journalText' in request.resource.data) || request.resource.data.journalText.size() <= 4000)
+          && (!('notes' in request.resource.data) || request.resource.data.notes.size() <= 500);
+      }
+    }
+
+    match /invites/{code} {
+      allow get: if signedIn();
+      allow list: if signedIn() && resource.data.ownerUid == request.auth.uid;
+
+      allow create: if signedIn()
+        && code.matches('^[A-HJ-NP-Z2-9]{6}$')
+        && request.resource.data.keys().hasOnly(['ownerUid', 'ownerName', 'status', 'createdAt', 'expiresAt'])
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.status == 'open'
+        && request.resource.data.ownerName is string && request.resource.data.ownerName.size() <= 40
+        && request.resource.data.expiresAt is int
+        && request.resource.data.expiresAt <= nowMs() + 25 * 3600 * 1000;
+
+      allow update: if signedIn()
+        && resource.data.status == 'open'
+        && resource.data.ownerUid != request.auth.uid
+        && resource.data.expiresAt > nowMs()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'acceptedBy'])
+        && request.resource.data.status == 'accepted'
+        && request.resource.data.acceptedBy == request.auth.uid;
+
+      allow delete: if signedIn() && resource.data.ownerUid == request.auth.uid;
+    }
+
+    match /connections/{connId} {
+      function isOwner() { return signedIn() && resource.data.ownerUid == request.auth.uid; }
+      function isMember() { return signedIn() && resource.data.memberUid == request.auth.uid; }
+      function invite() { return get(/databases/$(database)/documents/invites/$(request.resource.data.inviteCode)).data; }
+      function inviteAfter() { return getAfter(/databases/$(database)/documents/invites/$(request.resource.data.inviteCode)).data; }
+
+      allow read: if isOwner() || isMember();
+
+      // Only the invitee creates it, in the same batch that accepts the invite, with everything switched off.
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['ownerUid', 'memberUid', 'ownerName', 'memberName', 'relationship', 'inviteCode', 'permissions', 'createdAt'])
+        && request.resource.data.memberUid == request.auth.uid
+        && connId == request.resource.data.ownerUid + '_' + request.auth.uid
+        && request.resource.data.permissions == {'periodSoon': false, 'periodStarted': false, 'roughDay': false, 'phase': false}
+        && request.resource.data.memberName is string && request.resource.data.memberName.size() <= 40
+        && invite().ownerUid == request.resource.data.ownerUid
+        && invite().status == 'open'
+        && invite().expiresAt > nowMs()
+        && inviteAfter().acceptedBy == request.auth.uid;
+
+      // Only the owner decides what is shared.
+      allow update: if isOwner()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['permissions', 'relationship'])
+        && request.resource.data.permissions.keys().hasOnly(['periodSoon', 'periodStarted', 'roughDay', 'phase']);
+
+      // Either side can end it at any time.
+      allow delete: if isOwner() || isMember();
+    }
+
+    match /shared/{connId} {
+      function conn() { return get(/databases/$(database)/documents/connections/$(connId)).data; }
+      function connExists() { return exists(/databases/$(database)/documents/connections/$(connId)); }
+      function field(name) { return request.resource.data.get(name, null); }
+
+      allow get: if signedIn() && connExists() && request.auth.uid in [conn().ownerUid, conn().memberUid];
+
+      allow create, update: if signedIn() && connExists()
+        && conn().ownerUid == request.auth.uid
+        && request.resource.data.keys().hasOnly(['ownerUid', 'memberUid', 'ownerName', 'updatedAt', 'periodStartedOn', 'periodSoonOn', 'phase', 'roughDayAt', 'lastNote'])
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.memberUid == conn().memberUid
+        && (field('periodStartedOn') == null || conn().permissions.periodStarted == true)
+        && (field('periodSoonOn') == null || conn().permissions.periodSoon == true)
+        && (field('phase') == null || conn().permissions.phase == true)
+        && (field('roughDayAt') == null || conn().permissions.roughDay == true)
+        && (field('lastNote') == null || (conn().permissions.roughDay == true && field('lastNote').size() <= 140));
+
+      allow delete: if signedIn() && connExists() && request.auth.uid in [conn().ownerUid, conn().memberUid];
+    }
+
+    // Everything else is closed.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
