@@ -38,7 +38,8 @@ export async function notify(env: Env, uid: string, body: { connectionId?: strin
     const tokenDoc = await getDoc(env, d.name.split("/documents/")[1]);
     const token = fsGet(tokenDoc?.fields?.token) as string | undefined;
     if (!token) continue;
-    const ok = await sendFcm(env, token, { type, fromName: fromName || "Your person", message, connectionId: id });
+    const platform = fsGet(tokenDoc?.fields?.platform) as string | undefined;
+    const ok = await sendFcm(env, token, { type, fromName: fromName || "Your person", message, connectionId: id }, platform);
     if (ok) sent++; else await deleteDocByName(env, d.name); // prune dead tokens
   }
   return json({ ok: true, delivered: sent });

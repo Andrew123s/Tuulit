@@ -58,11 +58,25 @@ export async function deleteDocByName(env: Env, name: string): Promise<void> {
   if (!r.ok && r.status !== 404) throw new HttpError(502, "Database delete failed.");
 }
 
-/** Sends a data-only FCM message. Returns false when the token is no longer valid. */
-export async function sendFcm(env: Env, token: string, data: Record<string, string>): Promise<boolean> {
+/** The FCM v1 message for one device. Android gets the same data-only message as before; iOS
+    doesn't display data-only messages, so iPhones also get a discreet APNs alert that the app's
+    notification service extension can rewrite when the person has turned discreet mode off. */
+export function fcmMessage(token: string, data: Record<string, string>, platform?: string): Record<string, unknown> {
+  const message: Record<string, unknown> = { token, data, android: { priority: "HIGH" } };
+  if (platform === "ios") {
+    message.apns = {
+      headers: { "apns-priority": "10", "apns-push-type": "alert" },
+      payload: { aps: { alert: { title: "Tuulit", body: "Take a quick moment for yourself." }, sound: "default", "mutable-content": 1 } },
+    };
+  }
+  return message;
+}
+
+/** Sends an FCM message. Returns false when the token is no longer valid. */
+export async function sendFcm(env: Env, token: string, data: Record<string, string>, platform?: string): Promise<boolean> {
   const r = await gfetch(env, `https://fcm.googleapis.com/v1/projects/${env.FIREBASE_PROJECT_ID}/messages:send`, {
     method: "POST",
-    body: JSON.stringify({ message: { token, data, android: { priority: "HIGH" } } }),
+    body: JSON.stringify({ message: fcmMessage(token, data, platform) }),
   });
   if (r.ok) return true;
   if (r.status === 404 || r.status === 400) return false;

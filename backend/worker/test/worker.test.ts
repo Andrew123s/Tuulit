@@ -105,3 +105,17 @@ describe("email templates", () => {
     }
   });
 });
+
+describe("push messages", () => {
+  it("keeps Android messages data-only and adds a discreet APNs alert for iOS", async () => {
+    const { fcmMessage } = await import("../src/google");
+    const data = { type: "sos", fromName: "Sam", message: "Cramps are bad", connectionId: "a_b" };
+    const android = fcmMessage("t1", data, "android");
+    expect(android).toEqual({ token: "t1", data, android: { priority: "HIGH" } });
+    expect(fcmMessage("t0", data)).toEqual({ token: "t0", data, android: { priority: "HIGH" } });
+    const ios = fcmMessage("t2", data, "ios") as { apns: { payload: { aps: { alert: { title: string; body: string }; "mutable-content": number } } } };
+    expect(ios.apns.payload.aps.alert).toEqual({ title: "Tuulit", body: "Take a quick moment for yourself." });
+    expect(ios.apns.payload.aps["mutable-content"]).toBe(1);
+    expect(JSON.stringify(ios.apns)).not.toContain("Cramps");
+  });
+});

@@ -1,0 +1,145 @@
+# XcodeGen spec for Tuulit iOS. Generate the project on a Mac with:
+#   brew install xcodegen && cd ios && xcodegen generate
+# The generated Tuulit.xcodeproj is not committed.
+name: Tuulit
+options:
+  bundleIdPrefix: app.tuulit
+  deploymentTarget:
+    iOS: "17.0"
+  developmentLanguage: en
+  createIntermediateGroups: true
+
+configFiles:
+  Debug: Config/Tuulit.xcconfig
+  Release: Config/Tuulit.xcconfig
+
+settings:
+  base:
+    SWIFT_VERSION: "5.10"
+    MARKETING_VERSION: "2.1.0"
+    CURRENT_PROJECT_VERSION: "3"
+    DEVELOPMENT_TEAM: $(TUULIT_TEAM_ID)
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+
+packages:
+  TuulitCore:
+    path: Packages/TuulitCore
+  Firebase:
+    url: https://github.com/firebase/firebase-ios-sdk
+    from: 11.0.0
+
+targets:
+  Tuulit:
+    type: application
+    platform: iOS
+    sources:
+      - path: Tuulit
+        excludes:
+          - "Resources/GoogleService-Info.plist"
+      - path: Tuulit/Resources/GoogleService-Info.plist
+        optional: true
+        buildPhase: resources
+    dependencies:
+      - package: TuulitCore
+      - package: Firebase
+        product: FirebaseAuth
+      - package: Firebase
+        product: FirebaseFirestore
+      - package: Firebase
+        product: FirebaseMessaging
+      - package: Firebase
+        product: FirebaseAppCheck
+      - target: TuulitNotificationService
+        embed: true
+    entitlements:
+      path: Tuulit/Tuulit.entitlements
+      properties:
+        aps-environment: development
+        com.apple.developer.devicecheck.appattest-environment: production
+        com.apple.security.application-groups: [group.app.tuulit]
+    info:
+      path: Tuulit/Info.plist
+      properties:
+        CFBundleDisplayName: Tuulit
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        LSRequiresIPhoneOS: true
+        UILaunchScreen:
+          UIColorName: LaunchBackground
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        UIApplicationSupportsIndirectInputEvents: true
+        UIAppFonts: [Fraunces.ttf, PlusJakartaSans.ttf]
+        UIBackgroundModes: [remote-notification]
+        ITSAppUsesNonExemptEncryption: false
+        NSMicrophoneUsageDescription: Tuulit uses the microphone only when you choose to record or dictate a voice note.
+        NSSpeechRecognitionUsageDescription: Dictation turns what you say into the day's private note.
+        NSFaceIDUsageDescription: Not used. Tuulit's app lock uses your PIN.
+        TuulitAPIBaseURL: $(TUULIT_API_BASE_URL)
+        TuulitPrivacyURL: $(TUULIT_PRIVACY_URL)
+        FirebaseAppDelegateProxyEnabled: false
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.tuulit
+        TARGETED_DEVICE_FAMILY: "1"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        OTHER_LDFLAGS: [-ObjC]
+
+  TuulitNotificationService:
+    type: app-extension
+    platform: iOS
+    sources: [TuulitNotificationService]
+    entitlements:
+      path: TuulitNotificationService/TuulitNotificationService.entitlements
+      properties:
+        com.apple.security.application-groups: [group.app.tuulit]
+    info:
+      path: TuulitNotificationService/Info.plist
+      properties:
+        CFBundleDisplayName: Tuulit Notifications
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.usernotifications.service
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).NotificationService
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.tuulit.notifications
+
+  TuulitTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: [TuulitTests]
+    dependencies:
+      - target: Tuulit
+      - package: TuulitCore
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.tuulit.tests
+        GENERATE_INFOPLIST_FILE: YES
+
+  TuulitUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources: [TuulitUITests]
+    dependencies:
+      - target: Tuulit
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.tuulit.uitests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_TARGET_NAME: Tuulit
+
+schemes:
+  Tuulit:
+    build:
+      targets:
+        Tuulit: all
+    run:
+      config: Debug
+    test:
+      config: Debug
+      gatherCoverageData: true
+      targets:
+        - TuulitTests
+        - TuulitUITests

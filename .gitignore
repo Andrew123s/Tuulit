@@ -27,3 +27,18 @@ node_modules/
 firebase-debug.log
 firestore-debug.log
 ui-debug.log
+
+# iOS
+ios/Tuulit.xcodeproj/
+ios/Config/Local.xcconfig
+ios/Tuulit/Resources/GoogleService-Info.plist
+ios/Tuulit/Info.plist
+ios/Tuulit/Tuulit.entitlements
+ios/TuulitNotificationService/Info.plist
+ios/TuulitNotificationService/TuulitNotificationService.entitlements
+ios/Packages/TuulitCore/.build/
+ios/Packages/TuulitCore/.swiftpm/
+DerivedData/
+xcuserdata/
+*.xcuserstate
+Screen_Recording_*.mp4

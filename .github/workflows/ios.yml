@@ -1,0 +1,57 @@
+name: iOS
+
+# Builds the native iOS app and runs every test on macOS:
+#  - TuulitCore unit tests (swift test) on macOS and Linux
+#  - app unit tests and UI tests on three iPhone sizes
+# Firebase isn't configured in CI, so the app runs in local-only mode (as Android does without
+# google-services.json). No secrets are needed.
+on:
+  push:
+    paths: ["ios/**", ".github/workflows/ios.yml"]
+  pull_request:
+    paths: ["ios/**", ".github/workflows/ios.yml"]
+  workflow_dispatch:
+
+jobs:
+  core-linux:
+    runs-on: ubuntu-latest
+    container: swift:5.10
+    steps:
+      - uses: actions/checkout@v4
+      - name: TuulitCore tests (Linux)
+        working-directory: ios/Packages/TuulitCore
+        run: swift test
+
+  app:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Xcode
+        run: sudo xcode-select -s /Applications/Xcode_16.app || true
+      - name: TuulitCore tests (macOS)
+        working-directory: ios/Packages/TuulitCore
+        run: swift test
+      - name: Generate project
+        working-directory: ios
+        run: |
+          brew install xcodegen
+          xcodegen generate
+      - name: Build and test (iPhone SE, iPhone 16, iPhone 16 Pro Max)
+        working-directory: ios
+        run: |
+          set -o pipefail
+          xcodebuild test \
+            -project Tuulit.xcodeproj -scheme Tuulit \
+            -destination 'platform=iOS Simulator,name=iPhone SE (3rd generation)' \
+            -destination 'platform=iOS Simulator,name=iPhone 16' \
+            -destination 'platform=iOS Simulator,name=iPhone 16 Pro Max' \
+            -resultBundlePath TestResults \
+            CODE_SIGNING_ALLOWED=NO | tee xcodebuild.log
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-test-results
+          path: |
+            ios/TestResults.xcresult
+            ios/xcodebuild.log

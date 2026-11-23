@@ -1,0 +1,11 @@
+// Non-secret build settings for Tuulit iOS. Machine-specific values go in Local.xcconfig
+// (gitignored), for example:
+//   TUULIT_API_BASE_URL = https:/$()/tuulit-api.example.workers.dev
+//   TUULIT_TEAM_ID = ABCDE12345
+// The Worker URL is not a secret; every secret (AI, Brevo, R2, service account) stays in the Worker.
+
+TUULIT_API_BASE_URL =
+TUULIT_PRIVACY_URL = https:/$()/tuulit.app/privacy
+TUULIT_TEAM_ID =
+
+#include? "Local.xcconfig"
