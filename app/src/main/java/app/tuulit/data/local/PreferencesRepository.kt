@@ -27,7 +27,7 @@ data class UserSettings(
     val cycleLength: Int = 28,
     val periodLength: Int = 5,
     val regularity: CycleRegularity = CycleRegularity.NOT_SURE,
-    val themeMode: ThemeMode = ThemeMode.SYSTEM,
+    val themeMode: ThemeMode = ThemeMode.LIGHT,
     val reducedMotion: Boolean = false,
     val bananaMode: BananaModePersona = BananaModePersona.NEUTRAL,
     /** Epoch day on which Today Is Not the Day is active; it switches off at midnight. */
@@ -103,7 +103,7 @@ class PreferencesRepository(private val context: Context) {
             cycleLength = p[K.CYCLE] ?: 28,
             periodLength = p[K.PERIOD] ?: 5,
             regularity = CycleRegularity.fromName(p[K.REGULARITY]),
-            themeMode = runCatching { ThemeMode.valueOf(p[K.THEME] ?: "SYSTEM") }.getOrDefault(ThemeMode.SYSTEM),
+            themeMode = runCatching { ThemeMode.valueOf(p[K.THEME] ?: "LIGHT") }.getOrDefault(ThemeMode.LIGHT),
             reducedMotion = p[K.REDUCED_MOTION] ?: false,
             bananaMode = BananaModePersona.fromName(p[K.BANANA]),
             notTheDayOn = p[K.NOT_THE_DAY] ?: -1,

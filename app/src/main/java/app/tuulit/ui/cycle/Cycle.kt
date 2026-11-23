@@ -1,6 +1,12 @@
 package app.tuulit.ui.cycle
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import app.tuulit.ui.designsystem.ChipRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -57,13 +63,7 @@ fun CycleScreen(go: (String) -> Unit) {
     val logged = snap.logs.map { it.epochDay }.toSet()
 
     ScreenColumn {
-        val kicker = if (p.hasRecordedCycles) "Cycle ${snap.cycles.size} · day ${p.currentCycleDay}" else "Cycle"
-        val sub = when {
-            !p.hasRecordedCycles -> "Log a period and your phases and predictions will appear here."
-            p.nextPeriodStartEpochDay != null -> "${p.currentPhase.shortSummary.substringBefore(". ")}. Next period likely ${Dates.short(p.nextPeriodStartEpochDay)}."
-            else -> p.currentPhase.shortSummary
-        }
-        ScreenHeader(kicker, if (p.hasRecordedCycles) p.currentPhase.title.removeSuffix(" Phase").let { if (it.endsWith("Window")) it else "$it phase" } else "Your cycle", sub)
+        CycleSummary(snap)
         Segmented(listOf("Month", "History"), seg, { seg = it }, Modifier.padding(top = 18.dp, bottom = 14.dp))
         if (seg == 0) {
             MonthHeader(month, { month = month.minusMonths(1) }, { month = month.plusMonths(1) })
@@ -83,8 +83,26 @@ fun CycleScreen(go: (String) -> Unit) {
                 if (selected in p.predictedPeriodDays) add("predicted period")
                 if (selected == p.estimatedOvulationDay) add("estimated ovulation") else if (selected in p.estimatedFertileDays) add("fertile window (estimate)")
             }
-            ListRow(Dates.day(selected), sub = parts.joinToString(" · ").ifEmpty { if (selected > snap.today) "Nothing predicted for this day" else "Nothing logged" },
-                trailing = { if (selected <= snap.today) app.tuulit.ui.designsystem.IconBtn(TuulitIcons.Edit, "Log this day", { shell.openLog(selected) }) })
+            Row(Modifier.fillMaxWidth().padding(vertical = 12.dp).clip(RoundedCornerShape(24.dp)).background(Tuulit.colors.oat).padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    T(Dates.day(selected), Tuulit.type.title)
+                    if (parts.isEmpty()) T(if (selected > snap.today) "Nothing predicted for this day" else "Nothing logged yet",
+                        Tuulit.type.bodySm, Tuulit.colors.inkMuted, Modifier.padding(top = 4.dp))
+                    else ChipRow(Modifier.padding(top = 8.dp)) {
+                        parts.forEach { part ->
+                            T(part, Tuulit.type.caption, Tuulit.colors.ink, Modifier.clip(RoundedCornerShape(999.dp)).background(
+                                when {
+                                    part.contains("period") || part.contains("flow") -> Tuulit.colors.periodSoft
+                                    part.contains("fertile") || part.contains("ovulation") -> Tuulit.colors.fertileSoft
+                                    part.contains("mood") -> Tuulit.colors.peachSoft
+                                    else -> Tuulit.colors.sand
+                                }).padding(horizontal = 10.dp, vertical = 5.dp))
+                        }
+                    }
+                }
+                if (selected <= snap.today) app.tuulit.ui.designsystem.IconBtn(TuulitIcons.Edit, "Log this day", { shell.openLog(selected) })
+            }
             ListRow("Insights and Mood Map", icon = TuulitIcons.Chart, chevron = true, onClick = { go("insights") })
             ListRow("Pain Journal", icon = TuulitIcons.Pain, trailingText = "${snap.painLogs.size} ${if (snap.painLogs.size == 1) "entry" else "entries"}", chevron = true,
                 onClick = { go("pain") }, last = true)
@@ -171,5 +189,37 @@ fun DayStepper(label: String, day: Long, onChange: (Long) -> Unit, max: Long, en
         app.tuulit.ui.designsystem.IconBtn(TuulitIcons.Minus, "Day earlier", { onChange(day - 1) }, enabled = enabled)
         T(Dates.day(day), Tuulit.type.title, if (enabled) Tuulit.colors.ink else Tuulit.colors.inkFaint, Modifier.padding(horizontal = 12.dp))
         app.tuulit.ui.designsystem.IconBtn(TuulitIcons.Plus, "Day later", { onChange(day + 1) }, enabled = enabled && day < max)
+    }
+}
+
+
+/** Phase-tinted summary card at the top of Cycle: phase, day, next period and averages. */
+@Composable
+private fun CycleSummary(snap: app.tuulit.data.CycleSnapshot) {
+    val c = Tuulit.colors
+    val p = snap.prediction
+    val ph = app.tuulit.ui.designsystem.phaseStyle(if (p.hasRecordedCycles) p.currentPhase else app.tuulit.domain.CyclePhase.UNKNOWN)
+    androidx.compose.foundation.layout.Box(Modifier.fillMaxWidth().padding(top = 14.dp).clip(RoundedCornerShape(32.dp)).background(ph.soft)) {
+        app.tuulit.ui.designsystem.Blob(ph.fill.copy(alpha = 0.35f), Modifier.size(150.dp).align(Alignment.TopEnd)
+            .offset(x = 40.dp, y = (-30).dp), seed = 2)
+        Column(Modifier.padding(20.dp)) {
+            app.tuulit.ui.designsystem.Overline(if (p.hasRecordedCycles) "Cycle ${snap.cycles.size} · day ${p.currentCycleDay}" else "Your cycle", c.inkMuted)
+            T(if (p.hasRecordedCycles) "${ph.label} phase" else "Let's begin", Tuulit.type.display, modifier = Modifier.padding(top = 4.dp))
+            T(if (p.hasRecordedCycles) p.currentPhase.shortSummary.substringBefore(". ") + "." else "Log a period and your phases and predictions appear here.",
+                Tuulit.type.bodySm, c.inkMuted, Modifier.padding(top = 4.dp))
+            if (p.hasRecordedCycles) Row(Modifier.padding(top = 14.dp), horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
+                Stat(p.nextPeriodStartEpochDay?.let { Dates.short(it) } ?: "–", "Next period")
+                Stat("${p.averageCycleLength} d", "Avg cycle")
+                Stat("${p.averagePeriodDuration} d", "Avg period")
+            }
+        }
+    }
+}
+
+@Composable
+private fun androidx.compose.foundation.layout.RowScope.Stat(value: String, label: String) {
+    Column(Modifier.weight(1f).clip(RoundedCornerShape(18.dp)).background(Tuulit.colors.oat).padding(horizontal = 12.dp, vertical = 10.dp)) {
+        T(value, Tuulit.type.title, maxLines = 1)
+        T(label, Tuulit.type.caption, Tuulit.colors.inkMuted)
     }
 }

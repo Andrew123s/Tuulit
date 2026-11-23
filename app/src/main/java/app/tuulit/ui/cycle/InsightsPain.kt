@@ -159,7 +159,7 @@ private fun Bar(value: String, label: String, height: androidx.compose.ui.unit.D
     val c = Tuulit.colors
     Column(modifier, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
         T(value, Tuulit.type.caption, if (now) c.ink else c.inkMuted)
-        Box(Modifier.widthIn(max = 28.dp).fillMaxWidth().height(height).clip(RoundedCornerShape(8.dp, 8.dp, 4.dp, 4.dp)).background(if (now) c.ink else c.tan))
+        Box(Modifier.widthIn(max = 28.dp).fillMaxWidth().height(height).clip(RoundedCornerShape(8.dp, 8.dp, 4.dp, 4.dp)).background(if (now) c.period else c.peach))
         T(label, Tuulit.type.caption, c.inkFaint)
     }
 }
@@ -233,7 +233,7 @@ fun PainJournalScreen(onBack: () -> Unit, go: (String) -> Unit) {
                     Box(Modifier.weight(1f).height(40.dp).clip(RoundedCornerShape(8.dp))
                         .background(if (on) Tuulit.colors.period else if (fill) Tuulit.colors.periodSoft else Tuulit.colors.sand)
                         .clickable(role = Role.RadioButton, onClickLabel = "Pain $n of 10") { intensity = n; error = null },
-                        contentAlignment = Alignment.Center) { T("$n", Tuulit.type.label, if (on) Tuulit.colors.onInk else Tuulit.colors.ink) }
+                        contentAlignment = Alignment.Center) { T("$n", Tuulit.type.label, if (on) Tuulit.colors.onPeriod else Tuulit.colors.ink) }
                 }
             }
             GroupTitle("Where", Modifier.padding(top = 16.dp))

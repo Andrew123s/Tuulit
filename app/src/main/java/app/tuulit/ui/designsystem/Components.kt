@@ -145,7 +145,7 @@ fun IconBtn(icon: ImageVector, description: String, onClick: () -> Unit, modifie
 @Composable
 fun Chip(text: String, selected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier, icon: ImageVector? = null, outline: Boolean = false) {
     val c = Tuulit.colors
-    val bg by animateColorAsState(if (selected) c.ink else if (outline) Color.Transparent else c.sand, label = "chip")
+    val bg by animateColorAsState(if (selected) c.peach else if (outline) Color.Transparent else c.sand, label = "chip")
     Row(
         modifier.height(36.dp).clip(RoundedCornerShape(Radius.pill)).background(bg)
             .then(if (outline) Modifier.border(1.5.dp, c.inkFaint, RoundedCornerShape(Radius.pill)) else Modifier)
@@ -154,8 +154,9 @@ fun Chip(text: String, selected: Boolean, onClick: () -> Unit, modifier: Modifie
             .padding(horizontal = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        if (icon != null) { Icon(icon, null, Modifier.size(16.dp), tint = if (selected) c.onInk else c.ink); Spacer(Modifier.width(6.dp)) }
-        T(text, Tuulit.type.label, if (selected) c.onInk else c.ink, maxLines = 1)
+        if (icon != null) { Icon(icon, null, Modifier.size(16.dp), tint = c.ink); Spacer(Modifier.width(6.dp)) }
+        else if (selected) { Icon(TuulitIcons.Check, null, Modifier.size(16.dp), tint = c.ink); Spacer(Modifier.width(6.dp)) }
+        T(text, Tuulit.type.label, c.ink, maxLines = 1)
     }
 }
 
@@ -171,10 +172,10 @@ fun Segmented(options: List<String>, selected: Int, onSelect: (Int) -> Unit, mod
         options.forEachIndexed { i, o ->
             val on = i == selected
             Box(
-                Modifier.weight(1f).height(36.dp).clip(RoundedCornerShape(Radius.pill)).background(if (on) c.ink else Color.Transparent)
+                Modifier.weight(1f).height(40.dp).clip(RoundedCornerShape(Radius.pill)).background(if (on) c.oat else Color.Transparent)
                     .clickable(role = Role.Tab) { onSelect(i) }.semantics { stateDescription = if (on) "Selected" else "" },
                 contentAlignment = Alignment.Center,
-            ) { T(o, Tuulit.type.label, if (on) c.onInk else c.inkMuted, maxLines = 1) }
+            ) { T(o, Tuulit.type.label, if (on) c.ink else c.inkMuted, maxLines = 1) }
         }
     }
 }
@@ -245,10 +246,10 @@ fun Toggle(on: Boolean, modifier: Modifier = Modifier) {
     val c = Tuulit.colors
     val x by animateFloatAsState(if (on) 20f else 0f, label = "knob")
     Box(
-        modifier.size(52.dp, 32.dp).clip(RoundedCornerShape(Radius.pill)).background(if (on) c.ink else c.sand)
+        modifier.size(52.dp, 32.dp).clip(RoundedCornerShape(Radius.pill)).background(if (on) c.period else c.sand)
             .then(if (on) Modifier else Modifier.border(1.5.dp, c.inkFaint, RoundedCornerShape(Radius.pill))),
     ) {
-        Box(Modifier.offset(x = (5 + x).dp, y = 5.dp).size(22.dp).clip(CircleShape).background(if (on) c.onInk else c.inkMuted))
+        Box(Modifier.offset(x = (5 + x).dp, y = 5.dp).size(22.dp).clip(CircleShape).background(if (on) c.oat else c.inkMuted))
     }
 }
 
@@ -288,7 +289,11 @@ fun ListRow(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             if (leading != null) leading()
-            else if (icon != null) Icon(icon, null, Modifier.size(24.dp), tint = c.inkMuted)
+            else if (icon != null) {
+                val tiles = listOf(c.peachSoft, c.fertileSoft, c.bananaSoft, c.roseSoft, c.periodSoft)
+                Box(Modifier.size(40.dp).clip(RoundedCornerShape(14.dp)).background(tiles[Math.floorMod(title.hashCode(), tiles.size)]),
+                    contentAlignment = Alignment.Center) { Icon(icon, null, Modifier.size(20.dp), tint = c.ink) }
+            }
             Column(Modifier.weight(1f)) {
                 T(title, Tuulit.type.subtitle.copy(fontSize = Tuulit.type.body.fontSize), titleColor)
                 if (sub != null) T(sub, Tuulit.type.bodySm, c.inkMuted)
@@ -377,17 +382,21 @@ fun TileGrid(items: List<@Composable (Modifier) -> Unit>) {
 fun Avatar(name: String, size: Dp = 40.dp, modifier: Modifier = Modifier, onClick: (() -> Unit)? = null) {
     val c = Tuulit.colors
     Box(
-        modifier.size(size).clip(CircleShape).background(c.tan)
+        modifier.size(size).clip(CircleShape).background(c.peachSoft)
             .then(if (onClick != null) Modifier.clickable(role = Role.Button, onClickLabel = "Open You", onClick = onClick) else Modifier),
         contentAlignment = Alignment.Center,
-    ) { T(name.trim().take(1).uppercase().ifEmpty { "·" }, Tuulit.type.label.copy(fontSize = Tuulit.type.subtitle.fontSize * (size.value / 40f) * 0.9f)) }
+    ) {
+        val n = name.trim()
+        if (n.isEmpty() || n == "You") Icon(TuulitIcons.User, null, Modifier.size(size * 0.5f), tint = c.toffee)
+        else T(n.take(1).uppercase(), Tuulit.type.label.copy(fontSize = Tuulit.type.subtitle.fontSize * (size.value / 40f) * 0.9f))
+    }
 }
 
 @Composable
 fun Progress(steps: Int, done: Int, modifier: Modifier = Modifier) {
     val c = Tuulit.colors
     Row(modifier.semantics { contentDescription = "Step $done of $steps" }, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        repeat(steps) { i -> Box(Modifier.weight(1f).height(4.dp).clip(RoundedCornerShape(2.dp)).background(if (i < done) c.ink else c.sand)) }
+        repeat(steps) { i -> Box(Modifier.weight(1f).height(4.dp).clip(RoundedCornerShape(2.dp)).background(if (i < done) c.period else c.sand)) }
     }
 }
 

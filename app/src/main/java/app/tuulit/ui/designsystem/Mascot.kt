@@ -73,6 +73,10 @@ fun Mascot(mood: MascotMood, size: Dp, modifier: Modifier = Modifier) {
                 shape(wrap, MascotColors.Prop)
             }
             face(this)
+            if (mood != MascotMood.SLEEPY) {
+                drawCircle(MascotColors.Blush, 3.4f, Offset(53.5f, 41.5f))
+                drawCircle(MascotColors.Blush, 3.4f, Offset(68f, 40.5f))
+            }
         }
     }
 }

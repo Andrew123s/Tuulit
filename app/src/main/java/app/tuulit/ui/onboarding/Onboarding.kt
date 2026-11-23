@@ -12,6 +12,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
@@ -75,7 +77,11 @@ fun OnboardingFlow(onSignIn: () -> Unit) {
 
 @Composable
 private fun Welcome(onStart: () -> Unit, onSignIn: () -> Unit) = FixedScreen {
-    Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) { Mascot(MascotMood.WARM, 200.dp) }
+    Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+        app.tuulit.ui.designsystem.Blob(Tuulit.colors.peachSoft, Modifier.size(280.dp), seed = 2)
+        app.tuulit.ui.designsystem.Blob(Tuulit.colors.bananaSoft, Modifier.size(150.dp).offset(x = 90.dp, y = (-90).dp), seed = 4)
+        Mascot(MascotMood.HAPPY, 200.dp)
+    }
     T("Your cycle, understood. Your hard days, handled.", Tuulit.type.display)
     T("Tracking, comfort and honest answers, kept private on your phone.", Tuulit.type.body, Tuulit.colors.inkMuted, Modifier.padding(top = 12.dp, bottom = 28.dp))
     TButton("Get started", onStart, Modifier.fillMaxWidth())

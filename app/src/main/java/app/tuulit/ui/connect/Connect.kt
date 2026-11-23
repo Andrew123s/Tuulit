@@ -80,7 +80,8 @@ fun ConnectScreen(onBack: () -> Unit, go: (String) -> Unit) {
     var editSos by remember { mutableStateOf(false) }
     ScreenColumn {
         AppBar("Connect", onBack)
-        T("Let someone in, on your terms.", Tuulit.type.display, modifier = Modifier.padding(top = 10.dp))
+        app.tuulit.ui.designsystem.Illustration(app.tuulit.ui.designsystem.Illo.HEART, 96.dp, Modifier.padding(top = 6.dp), bg = Tuulit.colors.roseSoft)
+        T("Let someone in, on your terms.", Tuulit.type.display, modifier = Modifier.padding(top = 14.dp))
         T("They only see what you switch on. Symptoms, moods and notes are never shared.", Tuulit.type.bodySm, Tuulit.colors.inkMuted, Modifier.padding(top = 6.dp))
         if (!connectReady(go)) return@ScreenColumn
         GroupTitle("People who can see your updates", Modifier.padding(top = 20.dp))

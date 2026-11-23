@@ -1,5 +1,8 @@
 package app.tuulit.ui.you
 
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.background
 import android.Manifest
 import android.content.Intent
 import android.net.Uri
@@ -78,15 +81,17 @@ fun YouScreen(onBack: () -> Unit, go: (String) -> Unit) {
     val name = s?.displayName?.ifBlank { null } ?: signed?.displayName?.ifBlank { null } ?: "You"
     ScreenColumn {
         AppBar(onBack = onBack)
-        Row(Modifier.padding(top = 4.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(Modifier.padding(top = 4.dp).fillMaxWidth().clip(RoundedCornerShape(28.dp)).background(Tuulit.colors.roseSoft).padding(18.dp),
+            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
             Avatar(name, 56.dp)
-            Column {
+            Column(Modifier.weight(1f)) {
                 T(name, Tuulit.type.headline)
                 T(snap.cycles.firstOrNull()?.let { "Tracking since ${Dates.month(Dates.date(it.startEpochDay))} · ${snap.cycles.size} ${if (snap.cycles.size == 1) "cycle" else "cycles"}" }
                     ?: "No cycles logged yet", Tuulit.type.caption, Tuulit.colors.inkMuted)
             }
+            Mascot((s?.bananaMode ?: BananaModePersona.NEUTRAL).mood(), 52.dp)
         }
-        Column(Modifier.padding(top = 14.dp)) {
+        Column(Modifier.padding(top = 14.dp).fillMaxWidth().clip(RoundedCornerShape(28.dp)).background(Tuulit.colors.oat).padding(horizontal = 16.dp)) {
             ListRow("Cycle settings", icon = TuulitIcons.Cycle, trailingText = "${s?.cycleLength ?: 28} · ${s?.periodLength ?: 5} days", chevron = true, onClick = { go("you/cycle") })
             ListRow("Banana Mode", leading = { Mascot((s?.bananaMode ?: BananaModePersona.NEUTRAL).mood(), 24.dp) }, trailingText = s?.bananaMode?.title, chevron = true, onClick = { go("you/banana") })
             ListRow("Trusted people", icon = TuulitIcons.Users, chevron = true, onClick = { go("connect") })

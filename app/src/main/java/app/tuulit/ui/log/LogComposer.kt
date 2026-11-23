@@ -1,12 +1,14 @@
 package app.tuulit.ui.log
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -152,7 +154,15 @@ fun LogComposerSheet(startDay: Long, onDismiss: () -> Unit) {
 
         GroupTitle("Mood", Modifier.padding(top = 18.dp))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            (1..5).forEach { s -> FaceButton(s, l.moodScore == s) { change { it.copy(moodScore = if (it.moodScore == s) 0 else s) } } }
+            (1..5).forEach { s ->
+                val on = l.moodScore == s
+                Column(Modifier.clip(RoundedCornerShape(18.dp)).clickable(role = Role.RadioButton) { change { it.copy(moodScore = if (it.moodScore == s) 0 else s) } }
+                    .semantics { contentDescription = app.tuulit.ui.designsystem.moodFaceLabels[s - 1] + if (on) ", selected" else "" }.padding(2.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally) {
+                    app.tuulit.ui.designsystem.MoodBlob(s, on, 52.dp)
+                    T(app.tuulit.ui.designsystem.moodFaceLabels[s - 1], Tuulit.type.caption, if (on) Tuulit.colors.ink else Tuulit.colors.inkMuted, Modifier.padding(top = 2.dp))
+                }
+            }
         }
         VSpace(10.dp)
         ChipRow {
@@ -171,9 +181,9 @@ fun LogComposerSheet(startDay: Long, onDismiss: () -> Unit) {
         val all = (TrackingCatalog.defaultSymptoms + (settings?.customSymptoms ?: emptyList())).distinct()
         val shown = if (showAllSymptoms) all else all.take(8)
         shown.chunked(4).forEach { row ->
-            Row(Modifier.fillMaxWidth().padding(bottom = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(Modifier.fillMaxWidth().padding(bottom = 8.dp).height(androidx.compose.foundation.layout.IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 row.forEach { name ->
-                    SymptomTile(name, l.symptoms[name], Modifier.weight(1f)) {
+                    SymptomTile(name, l.symptoms[name], Modifier.weight(1f).fillMaxHeight()) {
                         change {
                             val cur = it.symptoms[name]
                             val next = when (cur) { null -> SymptomSeverity.MILD; SymptomSeverity.MILD -> SymptomSeverity.MODERATE; SymptomSeverity.MODERATE -> SymptomSeverity.SEVERE; SymptomSeverity.SEVERE -> null }
@@ -221,6 +231,8 @@ fun LogComposerSheet(startDay: Long, onDismiss: () -> Unit) {
             VoiceJournal(day, onTranscript = { text -> change { it.copy(journalText = (it.journalText + " " + text).trim()) } },
                 hasKey = l.voiceNoteKey != null, onBackedUp = { key -> change { it.copy(voiceNoteKey = key) } })
         }
+        TButton("Done", { shell.showToast(if (log.isNullOrEmptyLog()) "Nothing logged for this day" else "Saved for ${Dates.short(day)}"); onDismiss() },
+            Modifier.fillMaxWidth().padding(top = 20.dp), kind = ButtonKind.BANANA, icon = TuulitIcons.Check)
         if (!log.isNullOrEmptyLog()) {
             TButton("Clear this day", { confirmDelete = true }, Modifier.padding(top = 12.dp), kind = ButtonKind.TEXT)
         }
@@ -238,10 +250,10 @@ private fun FlowStep(f: FlowIntensity, on: Boolean, onClick: () -> Unit) {
     val c = Tuulit.colors
     Column(Modifier.width(60.dp).clickable(role = Role.RadioButton, onClick = onClick).semantics { stateDescription = if (on) "Selected" else "" },
         horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Box(Modifier.size(52.dp).clip(CircleShape).background(if (on) (if (f == FlowIntensity.NONE) c.ink else c.period) else c.sand),
+        Box(Modifier.size(54.dp).clip(CircleShape).background(if (on) (if (f == FlowIntensity.NONE) c.tan else c.period) else if (f == FlowIntensity.NONE) c.sand else c.periodSoft),
             contentAlignment = Alignment.Center) {
-            val tint = if (on) c.onInk else c.period
-            if (f == FlowIntensity.NONE) Icon(TuulitIcons.Close, null, Modifier.size(18.dp), tint = if (on) c.onInk else c.inkMuted)
+            val tint = if (on) c.onPeriod else c.periodDeep
+            if (f == FlowIntensity.NONE) Icon(TuulitIcons.Close, null, Modifier.size(18.dp), tint = c.ink)
             else Icon(TuulitIcons.Drop, null, Modifier.size((10 + f.level * 4).dp), tint = tint)
         }
         T(f.label.replace("No flow", "None"), Tuulit.type.caption, if (on) c.ink else c.inkMuted, align = TextAlign.Center, maxLines = 1)
@@ -253,16 +265,17 @@ private fun SymptomTile(name: String, severity: SymptomSeverity?, modifier: Modi
     val c = Tuulit.colors
     val on = severity != null
     Column(
-        modifier.clip(RoundedCornerShape(16.dp)).background(if (on) c.ink else c.sand)
+        modifier.clip(RoundedCornerShape(18.dp)).background(if (on) c.fertileSoft else c.sand)
+            .then(if (on) Modifier.border(2.dp, c.fertile, RoundedCornerShape(18.dp)) else Modifier)
             .clickable(role = Role.Button, onClick = onClick)
             .semantics { contentDescription = name + (severity?.let { ", ${it.label.lowercase()}" } ?: ", not logged") }
             .padding(top = 12.dp, bottom = 10.dp, start = 4.dp, end = 4.dp),
         horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        Icon(symptomIcons[name] ?: TuulitIcons.Spark, null, Modifier.size(20.dp), tint = if (on) c.onInk else c.inkMuted)
-        T(name, Tuulit.type.caption, if (on) c.onInk else c.ink, align = TextAlign.Center, maxLines = 2)
+        Icon(symptomIcons[name] ?: TuulitIcons.Spark, null, Modifier.size(22.dp), tint = if (on) c.lilacDeep else c.inkMuted)
+        T(name, Tuulit.type.caption, c.ink, align = TextAlign.Center, maxLines = 2)
         if (on) Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
-            repeat(3) { i -> Box(Modifier.size(6.dp).clip(CircleShape).background(c.onInk.copy(alpha = if (i < severity!!.level) 1f else 0.25f))) }
+            repeat(3) { i -> Box(Modifier.size(7.dp).clip(CircleShape).background(c.lilacDeep.copy(alpha = if (i < severity!!.level) 1f else 0.25f))) }
         }
     }
 }
@@ -272,7 +285,7 @@ fun EnergyBars(value: Int, onSet: (Int) -> Unit) {
     val c = Tuulit.colors
     Row(Modifier.fillMaxWidth().height(56.dp).padding(top = 6.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.Bottom) {
         (1..5).forEach { i ->
-            Box(Modifier.weight(1f).height((14 + i * 8).dp).clip(RoundedCornerShape(6.dp)).background(if (i <= value) c.toffee else c.sand)
+            Box(Modifier.weight(1f).height((14 + i * 8).dp).clip(RoundedCornerShape(10.dp)).background(if (i <= value) c.banana else c.sand)
                 .clickable(role = Role.Button, onClickLabel = "Energy $i") { onSet(i) })
         }
     }

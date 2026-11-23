@@ -87,14 +87,14 @@ fun NeedSomethingSheet(nav: NavHostController, onDismiss: () -> Unit) {
                 row.forEach { n ->
                     val on = picked == n
                     Column(
-                        Modifier.weight(1f).clip(RoundedCornerShape(16.dp)).background(if (on) Tuulit.colors.ink else Tuulit.colors.sand)
+                        Modifier.weight(1f).clip(RoundedCornerShape(20.dp)).background(if (on) Tuulit.colors.peach else Tuulit.colors.sand)
                             .clickable(role = Role.RadioButton) {
                                 if (n.label == "Tell my person") { onDismiss(); shell.sheet = ShellSheet.SOS } else picked = n
                             }.padding(vertical = 12.dp, horizontal = 4.dp),
                         horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp),
                     ) {
-                        Icon(n.icon, null, Modifier.size(22.dp), tint = if (on) Tuulit.colors.onInk else Tuulit.colors.inkMuted)
-                        T(n.label, Tuulit.type.caption, if (on) Tuulit.colors.onInk else Tuulit.colors.ink, align = TextAlign.Center)
+                        Icon(n.icon, null, Modifier.size(22.dp), tint = if (on) Tuulit.colors.periodDeep else Tuulit.colors.inkMuted)
+                        T(n.label, Tuulit.type.caption, Tuulit.colors.ink, align = TextAlign.Center)
                     }
                 }
             }

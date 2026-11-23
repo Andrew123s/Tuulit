@@ -24,41 +24,52 @@ import androidx.compose.ui.unit.sp
 import app.tuulit.R
 import app.tuulit.data.local.ThemeMode
 
-/** Colour tokens from the Tuulit Design System (tokens.json). Names match the design exactly. */
+/**
+ * Colour tokens, v2 (light-first, warm and feminine). Old names are kept so every screen keeps
+ * working: cream = ivory page, oat = raised surface, sand = vanilla fill, tan = peachy tan,
+ * period = soft coral, fertile = muted lilac, toffee = cocoa accent.
+ */
 @Immutable
 data class TuulitColors(
     val cream: Color, val oat: Color, val sand: Color, val tan: Color, val hairline: Color,
     val ink: Color, val inkMuted: Color, val inkFaint: Color, val onInk: Color,
     val toffee: Color, val banana: Color, val onBanana: Color, val bananaSoft: Color,
-    val period: Color, val periodSoft: Color, val fertile: Color, val fertileSoft: Color,
+    val period: Color, val periodSoft: Color, val periodDeep: Color, val onPeriod: Color,
+    val fertile: Color, val fertileSoft: Color, val lilacDeep: Color,
+    val peach: Color, val peachSoft: Color, val rose: Color, val roseSoft: Color,
     val alert: Color, val alertSoft: Color, val focus: Color, val scrim: Color, val isDark: Boolean,
 )
 
 val LightColors = TuulitColors(
-    cream = Color(0xFFF6F0E4), oat = Color(0xFFFBF7EF), sand = Color(0xFFECE2D0), tan = Color(0xFFD6BE98),
-    hairline = Color(0xFFDDD0BA), ink = Color(0xFF221E1A), inkMuted = Color(0xFF5E554A), inkFaint = Color(0xFF736859),
-    onInk = Color(0xFFFBF7EF), toffee = Color(0xFF8A5A2B), banana = Color(0xFFF2C230), onBanana = Color(0xFF221E1A),
-    bananaSoft = Color(0xFFF7E3A3), period = Color(0xFFA64A33), periodSoft = Color(0xFFF2D9D0), fertile = Color(0xFF4F6577),
-    fertileSoft = Color(0xFFDDE3E6), alert = Color(0xFF8E2A2A), alertSoft = Color(0xFFF3DAD6), focus = Color(0xFF221E1A),
-    scrim = Color(0x52221E1A), isDark = false,
+    cream = Color(0xFFFFF8F0), oat = Color(0xFFFFFDF9), sand = Color(0xFFFBEEDD), tan = Color(0xFFF2D9BE),
+    hairline = Color(0xFFF0E2D0), ink = Color(0xFF2B2320), inkMuted = Color(0xFF6B5A50), inkFaint = Color(0xFF7D6857),
+    onInk = Color(0xFFFFF8F0), toffee = Color(0xFF9A5B3C), banana = Color(0xFFF7C948), onBanana = Color(0xFF2B2320),
+    bananaSoft = Color(0xFFFFF0C2), period = Color(0xFFE2725B), periodSoft = Color(0xFFFDDDD3), periodDeep = Color(0xFFB5482F),
+    onPeriod = Color(0xFF2B2320), fertile = Color(0xFF9C88C9), fertileSoft = Color(0xFFECE5F7), lilacDeep = Color(0xFF6F5AA8),
+    peach = Color(0xFFFFC9AE), peachSoft = Color(0xFFFFE7DA), rose = Color(0xFFE7A6B0), roseSoft = Color(0xFFF9E1E4),
+    alert = Color(0xFFB3261E), alertSoft = Color(0xFFFCE3DF), focus = Color(0xFF2B2320),
+    scrim = Color(0x522B2320), isDark = false,
 )
 
 val DarkColors = TuulitColors(
-    cream = Color(0xFF171411), oat = Color(0xFF201C18), sand = Color(0xFF2B2620), tan = Color(0xFF4A3F33),
-    hairline = Color(0xFF3A332B), ink = Color(0xFFF3ECE1), inkMuted = Color(0xFFBDB2A3), inkFaint = Color(0xFF968B7C),
-    onInk = Color(0xFF171411), toffee = Color(0xFFD9A66E), banana = Color(0xFFF2C94A), onBanana = Color(0xFF221E1A),
-    bananaSoft = Color(0xFF3A3016), period = Color(0xFFE0806F), periodSoft = Color(0xFF3D231E), fertile = Color(0xFF9DB2C4),
-    fertileSoft = Color(0xFF222A31), alert = Color(0xFFEF8A80), alertSoft = Color(0xFF3D2221), focus = Color(0xFFF2C94A),
+    cream = Color(0xFF1C1517), oat = Color(0xFF261D20), sand = Color(0xFF33272A), tan = Color(0xFF4B3A37),
+    hairline = Color(0xFF3D2F31), ink = Color(0xFFF8EEE6), inkMuted = Color(0xFFCDBAB0), inkFaint = Color(0xFFA8958B),
+    onInk = Color(0xFF1C1517), toffee = Color(0xFFF0B48C), banana = Color(0xFFF7CF5C), onBanana = Color(0xFF2B2320),
+    bananaSoft = Color(0xFF3E3320), period = Color(0xFFF08A73), periodSoft = Color(0xFF4A2A26), periodDeep = Color(0xFFF5A08C),
+    onPeriod = Color(0xFF2B2320), fertile = Color(0xFFB7A6E0), fertileSoft = Color(0xFF332C45), lilacDeep = Color(0xFFC9BCEB),
+    peach = Color(0xFFF4B69A), peachSoft = Color(0xFF45302A), rose = Color(0xFFE7A6B0), roseSoft = Color(0xFF452E34),
+    alert = Color(0xFFF2998F), alertSoft = Color(0xFF4A2522), focus = Color(0xFFF7CF5C),
     scrim = Color(0x99000000), isDark = true,
 )
 
 /** Mascot art colours are fixed in both themes; the mark is a picture, not UI. */
 object MascotColors {
-    val Banana = Color(0xFFF2C230)
-    val Tan = Color(0xFFD6BE98)
-    val Flesh = Color(0xFFFBF7EF)
-    val Outline = Color(0xFF221E1A)
-    val Prop = Color(0xFFA64A33)
+    val Banana = Color(0xFFF7C948)
+    val Tan = Color(0xFFF2CFA8)
+    val Flesh = Color(0xFFFFFBF3)
+    val Outline = Color(0xFF3A2A24)
+    val Prop = Color(0xFFE2725B)
+    val Blush = Color(0x66F49A8C)
 }
 
 @OptIn(ExperimentalTextApi::class)

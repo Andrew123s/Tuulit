@@ -5,6 +5,17 @@ import android.content.Intent
 import android.graphics.Paint
 import android.graphics.pdf.PdfDocument
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Icon
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.semantics.contentDescription
+import app.tuulit.ui.designsystem.Blob
+import app.tuulit.ui.designsystem.Mascot
+import app.tuulit.ui.designsystem.MascotMood
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -108,26 +119,65 @@ class AskViewModel(private val c: AppContainer, val tool: AiTool) : ViewModel() 
     fun clear() = viewModelScope.launch { c.ai.clear(conversationId); lastUrgency = UrgencyLevel.NONE; verdict = null; error = null }
 }
 
+private data class Shortcut(val label: String, val sub: String, val icon: androidx.compose.ui.graphics.vector.ImageVector, val route: String)
+
 @Composable
 fun AskHome(go: (String) -> Unit) {
     val c = container()
+    val col = Tuulit.colors
     val settings by c.prefs.settings.collectAsState(initial = null)
     var draft by remember { mutableStateOf("") }
+    val enc = { q: String -> android.net.Uri.encode(q) }
+    val shortcuts = listOf(
+        Shortcut("Explain my cycle", "Phases, simply", TuulitIcons.Book, "ask/chat/explain?topic=${enc("Explain the phase of my cycle I'm in right now")}"),
+        Shortcut("Why am I feeling this way?", "Mood and energy", TuulitIcons.Care, "ask/chat/chat?topic=${enc("Why might I be feeling more emotional than usual?")}"),
+        Shortcut("Ask about a symptom", "Cramps, bloating…", TuulitIcons.Pain, "ask/chat/chat"),
+        Shortcut("Prepare for my period", "What helps ahead", TuulitIcons.Kit, "ask/chat/chat?topic=${enc("How can I prepare for my period this week?")}"),
+        Shortcut("Help me feel better", "Gentle ideas", TuulitIcons.Heat, "ask/chat/chat?topic=${enc("I don't feel great today. What could help?")}"),
+        Shortcut("Doctor appointment", "A summary to share", TuulitIcons.Edit, "ask/chat/appointment"),
+    )
+    val tints = listOf(col.fertileSoft, col.roseSoft, col.peachSoft, col.bananaSoft, col.periodSoft, col.sand)
+    val iconTints = listOf(col.lilacDeep, col.periodDeep, col.toffee, col.toffee, col.periodDeep, col.ink)
     ScreenColumn {
-        ScreenHeader("Ask Tuulit", "What's on your mind?", "Clear answers about your body. Not a substitute for a clinician.")
+        Box(Modifier.fillMaxWidth().padding(top = 14.dp).clip(RoundedCornerShape(32.dp)).background(col.fertileSoft)) {
+            Blob(col.oat.copy(alpha = 0.6f), Modifier.size(160.dp).align(Alignment.TopEnd).offset(x = 40.dp, y = (-30).dp), seed = 5)
+            Column(Modifier.padding(22.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(Modifier.size(56.dp).clip(CircleShape).background(col.oat), contentAlignment = Alignment.Center) { Mascot(MascotMood.WARM, 46.dp) }
+                    Column(Modifier.padding(start = 12.dp)) {
+                        Overline("Ask Tuulit", col.lilacDeep)
+                        T("Hi, I'm here for you.", Tuulit.type.title)
+                    }
+                }
+                T("What's on your mind?", Tuulit.type.display, modifier = Modifier.padding(top = 14.dp))
+                T("Clear, kind answers about your body. Never a diagnosis.", Tuulit.type.bodySm, col.inkMuted, Modifier.padding(top = 6.dp))
+            }
+        }
         AskGate(go)
-        Column(Modifier.padding(top = 14.dp)) {
-            ListRow("Explain my body", sub = "Phases, hormones, symptoms, simply", icon = TuulitIcons.Book, chevron = true, onClick = { go("ask/chat/explain") })
-            ListRow("Myth or fact?", sub = "Check something you heard", icon = TuulitIcons.Quiz, chevron = true, onClick = { go("ask/chat/myth") })
-            ListRow("Prepare for an appointment", sub = "A summary to show your clinician", icon = TuulitIcons.Edit, chevron = true, last = true, onClick = { go("ask/chat/appointment") })
+        T("Start with", Tuulit.type.title, modifier = Modifier.padding(top = 22.dp, bottom = 10.dp))
+        shortcuts.chunked(2).forEachIndexed { r, pair ->
+            Row(Modifier.padding(bottom = 10.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                pair.forEachIndexed { k, sc ->
+                    val idx = r * 2 + k
+                    Column(Modifier.weight(1f).height(124.dp).clip(RoundedCornerShape(24.dp)).background(tints[idx])
+                        .clickable(role = androidx.compose.ui.semantics.Role.Button) { go(sc.route) }.padding(14.dp)) {
+                        Box(Modifier.size(38.dp).clip(CircleShape).background(col.oat), contentAlignment = Alignment.Center) {
+                            Icon(sc.icon, null, Modifier.size(20.dp), tint = iconTints[idx])
+                        }
+                        androidx.compose.foundation.layout.Spacer(Modifier.weight(1f))
+                        T(sc.label, Tuulit.type.label, maxLines = 2)
+                        T(sc.sub, Tuulit.type.caption, col.inkMuted, maxLines = 1)
+                    }
+                }
+            }
         }
-        ChipRow(Modifier.padding(top = 20.dp, bottom = 12.dp)) {
-            listOf("Is my cycle normal?", "Why am I so tired?", "PMS or PMDD?").forEach { s -> Chip(s, false, { go("ask/chat/chat?topic=${android.net.Uri.encode(s)}") }) }
+        Composer(draft, { draft = it }, onSend = { if (draft.isNotBlank()) { go("ask/chat/chat?topic=${enc(draft)}"); draft = "" } }, enabled = true)
+        Row(Modifier.padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+            T(if (settings?.aiContextOptIn == true) "Personal answers on" else "Personal answers off · answers stay general",
+                Tuulit.type.caption, col.inkFaint, Modifier.weight(1f))
+            TButton("Change", { go("you/privacy") }, kind = ButtonKind.TEXT)
         }
-        Composer(draft, { draft = it }, onSend = { if (draft.isNotBlank()) { go("ask/chat/chat?topic=${android.net.Uri.encode(draft)}"); draft = "" } }, enabled = true)
-        T(if (settings?.aiContextOptIn == true) "Personal answers on: Ask may use a summary of your cycle" else "Personal answers off: answers stay general",
-            Tuulit.type.caption, Tuulit.colors.inkFaint, Modifier.padding(top = 8.dp).fillMaxWidth())
-        TButton("Change in Privacy", { go("you/privacy") }, kind = ButtonKind.TEXT)
+        TButton("Myth or fact? Check something you heard", { go("ask/chat/myth") }, kind = ButtonKind.TEXT, icon = TuulitIcons.Quiz)
     }
 }
 
@@ -147,7 +197,8 @@ fun AskGate(go: (String) -> Unit) {
 @Composable
 private fun Composer(value: String, onChange: (String) -> Unit, onSend: () -> Unit, enabled: Boolean, placeholder: String = "Ask about your body") {
     val c = Tuulit.colors
-    Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(999.dp)).background(c.oat).padding(start = 6.dp, end = 6.dp, top = 4.dp, bottom = 4.dp),
+    Row(Modifier.fillMaxWidth().shadow(8.dp, RoundedCornerShape(999.dp), ambientColor = c.fertile, spotColor = c.fertile)
+        .clip(RoundedCornerShape(999.dp)).background(c.oat).padding(start = 6.dp, end = 6.dp, top = 4.dp, bottom = 4.dp),
         verticalAlignment = Alignment.CenterVertically) {
         Field("", value, { onChange(it.take(1000)) }, Modifier.weight(1f), placeholder = placeholder,
             keyboard = KeyboardOptions(imeAction = ImeAction.Send), actions = KeyboardActions(onSend = { onSend() }), bare = true)
@@ -211,16 +262,42 @@ fun AskChat(toolName: String, topic: String?, onBack: () -> Unit, go: (String) -
 private fun Bubble(m: AiMessageEntity) {
     val c = Tuulit.colors
     val mine = m.role == "user"
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = if (mine) Arrangement.End else Arrangement.Start) {
+    val typing = !mine && m.text == "…"
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = if (mine) Arrangement.End else Arrangement.Start, verticalAlignment = Alignment.Bottom) {
+        if (!mine) {
+            Box(Modifier.padding(end = 8.dp).size(34.dp).clip(CircleShape).background(c.bananaSoft), contentAlignment = Alignment.Center) {
+                Mascot(MascotMood.WARM, 28.dp)
+            }
+        }
         Column(
-            Modifier.widthIn(max = 300.dp)
-                .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomStart = if (mine) 16.dp else 6.dp, bottomEnd = if (mine) 6.dp else 16.dp))
-                .background(if (mine) c.ink else if (m.failed) c.alertSoft else c.oat).padding(horizontal = 16.dp, vertical = 12.dp)
+            Modifier.widthIn(max = 290.dp)
+                .clip(RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp, bottomStart = if (mine) 22.dp else 6.dp, bottomEnd = if (mine) 6.dp else 22.dp))
+                .background(if (mine) c.peach else if (m.failed) c.alertSoft else c.oat).padding(horizontal = 16.dp, vertical = 12.dp)
                 .semantics { if (!mine) liveRegion = LiveRegionMode.Polite },
         ) {
-            T(m.text, Tuulit.type.body.copy(fontSize = Tuulit.type.bodySm.fontSize * 1.07f), if (mine) c.onInk else c.ink)
-            if (!mine && !m.failed && m.text != "…") T(if (m.usedContext) "Used a summary of your cycle · not a diagnosis" else "General information · not a diagnosis",
+            if (typing) TypingDots() else {
+                val paragraphs = m.text.split("\n").filter { it.isNotBlank() }
+                paragraphs.forEachIndexed { i, para ->
+                    val bullet = para.trimStart().let { it.startsWith("- ") || it.startsWith("• ") || it.matches(Regex("^\\d+[.)] .*")) }
+                    T(para.trim(), (if (i == 0 && !mine && !m.failed) Tuulit.type.subtitle.copy(fontSize = Tuulit.type.body.fontSize) else Tuulit.type.body),
+                        c.ink, Modifier.padding(top = if (i == 0) 0.dp else if (bullet) 4.dp else 8.dp, start = if (bullet) 4.dp else 0.dp))
+                }
+            }
+            if (!mine && !m.failed && !typing) T(if (m.usedContext) "Used a summary of your cycle · not a diagnosis" else "General information · not a diagnosis",
                 Tuulit.type.caption, c.inkFaint, Modifier.padding(top = 8.dp))
+        }
+    }
+}
+
+@Composable
+private fun TypingDots() {
+    val c = Tuulit.colors
+    val t = androidx.compose.animation.core.rememberInfiniteTransition(label = "typing")
+    Row(Modifier.semantics { contentDescription = "Tuulit is thinking" }.padding(vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        repeat(3) { i ->
+            val a by t.animateFloat(0.3f, 1f, androidx.compose.animation.core.infiniteRepeatable(
+                androidx.compose.animation.core.tween(500, delayMillis = i * 160), androidx.compose.animation.core.RepeatMode.Reverse), label = "dot$i")
+            Box(Modifier.size(9.dp).clip(CircleShape).background(c.fertile.copy(alpha = if (Tuulit.reducedMotion) 1f else a)))
         }
     }
 }

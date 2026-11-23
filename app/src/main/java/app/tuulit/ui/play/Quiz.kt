@@ -136,7 +136,8 @@ private fun Answer(text: String, state: AnswerState, enabled: Boolean, onClick: 
     val shape = RoundedCornerShape(16.dp)
     Row(
         Modifier.fillMaxWidth().padding(top = 10.dp).heightIn(min = 60.dp).clip(shape)
-            .background(when (state) { AnswerState.RIGHT, AnswerState.CHOSEN -> c.ink; AnswerState.WRONG -> c.cream; else -> c.sand })
+            .background(when (state) { AnswerState.RIGHT, AnswerState.CHOSEN -> c.fertileSoft; AnswerState.WRONG -> c.cream; else -> c.sand })
+            .then(if (state == AnswerState.RIGHT || state == AnswerState.CHOSEN) Modifier.border(2.dp, c.fertile, shape) else Modifier)
             .then(if (state == AnswerState.WRONG) Modifier.border(1.5.dp, c.inkFaint, shape) else Modifier)
             .alpha(if (state == AnswerState.DIM) 0.45f else 1f)
             .clickable(enabled = enabled, role = Role.RadioButton, onClick = onClick)
@@ -145,9 +146,9 @@ private fun Answer(text: String, state: AnswerState, enabled: Boolean, onClick: 
         verticalAlignment = Alignment.CenterVertically,
     ) {
         T(text, Tuulit.type.label.copy(fontSize = Tuulit.type.body.fontSize),
-            when (state) { AnswerState.RIGHT, AnswerState.CHOSEN -> c.onInk; AnswerState.WRONG -> c.inkMuted; else -> c.ink }, Modifier.weight(1f))
+            when (state) { AnswerState.WRONG -> c.inkMuted; else -> c.ink }, Modifier.weight(1f))
         when (state) {
-            AnswerState.RIGHT, AnswerState.CHOSEN -> Icon(TuulitIcons.Check, null, Modifier.size(20.dp), tint = c.onInk)
+            AnswerState.RIGHT, AnswerState.CHOSEN -> Icon(TuulitIcons.Check, null, Modifier.size(20.dp), tint = c.lilacDeep)
             AnswerState.WRONG -> Icon(TuulitIcons.Close, null, Modifier.size(18.dp), tint = c.inkMuted)
             else -> Box(Modifier.size(0.dp))
         }

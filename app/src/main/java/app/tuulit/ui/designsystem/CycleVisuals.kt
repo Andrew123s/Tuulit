@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -102,16 +103,27 @@ fun CycleRibbon(days: List<Long>, marks: (Long) -> DayMarks, label: (Long) -> St
 @Composable
 fun Legend(modifier: Modifier = Modifier) {
     val c = Tuulit.colors
-    Row(modifier, horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically) {
-        @Composable fun item(label: String, dot: @Composable () -> Unit) = Row(verticalAlignment = Alignment.CenterVertically) { dot(); T(" $label", Tuulit.type.caption, c.inkMuted) }
-        item("Period") { Box(Modifier.size(10.dp).clip(CircleShape).background(c.period)) }
-        item("Predicted") { Box(Modifier.size(10.dp).clip(CircleShape).border(1.5.dp, c.period, CircleShape)) }
-        item("Fertile (estimate)") { Box(Modifier.size(10.dp).clip(CircleShape).background(c.fertile)) }
-        item("Today") { Box(Modifier.size(10.dp).clip(CircleShape).background(c.banana)) }
+    @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+    androidx.compose.foundation.layout.FlowRow(modifier, horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        @Composable fun item(label: String, fill: Color, ring: Color? = null) = Row(
+            Modifier.clip(RoundedCornerShape(Radius.pill)).background(c.oat).padding(horizontal = 10.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(Modifier.size(12.dp).clip(CircleShape).background(fill).then(if (ring != null) Modifier.border(2.dp, ring, CircleShape) else Modifier))
+            T("  $label", Tuulit.type.caption, c.inkMuted)
+        }
+        item("Period", c.period)
+        item("Predicted", c.periodSoft)
+        item("Fertile (estimate)", c.fertileSoft)
+        item("Ovulation", c.fertile)
+        item("Today", c.oat, c.banana)
     }
 }
 
-/** Month grid. Weeks start on the locale's first day. Future days can be disabled. */
+/**
+ * Month grid with round, softly tinted days: period = coral, predicted = blush, fertile = lilac
+ * tint, ovulation = lilac, today = banana ring. Weeks start on the locale's first day.
+ */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun MonthGrid(
@@ -130,37 +142,47 @@ fun MonthGrid(
     val lead = ((first.dayOfWeek.value - firstDow.value) + 7) % 7
     val cells = (0 until lead).map { first.minusDays((lead - it).toLong()) } + (1..month.lengthOfMonth()).map { month.atDay(it) }
     val padded = cells + (0 until (7 - cells.size % 7) % 7).map { month.atEndOfMonth().plusDays((it + 1).toLong()) }
-    Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Row(Modifier.fillMaxWidth()) {
             days.forEach { d: DayOfWeek ->
-                T(d.getDisplayName(TextStyle.NARROW, Locale.getDefault()), Tuulit.type.caption, c.inkFaint,
-                    Modifier.weight(1f).padding(bottom = 6.dp), align = androidx.compose.ui.text.style.TextAlign.Center)
+                T(d.getDisplayName(TextStyle.SHORT, Locale.getDefault()).take(2), Tuulit.type.caption, c.inkFaint,
+                    Modifier.weight(1f).padding(bottom = 4.dp), align = androidx.compose.ui.text.style.TextAlign.Center)
             }
         }
         padded.chunked(7).forEach { week ->
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            Row(Modifier.fillMaxWidth()) {
                 week.forEach { date: LocalDate ->
                     val day = date.toEpochDay()
                     val inMonth = date.month == month.month
                     val m = marks(day)
                     val disabled = disableAfter != null && day > disableAfter
-                    val shape = RoundedCornerShape(Radius.sm)
-                    val bg = when { m.today -> c.banana; m.period -> c.period; m.ovulation -> c.fertileSoft; else -> Color.Transparent }
-                    val fg = when { m.today -> c.onBanana; m.period -> c.onInk; else -> c.ink }
+                    val fill = when {
+                        m.period -> c.period
+                        m.ovulation -> c.fertile
+                        m.predicted -> c.periodSoft
+                        m.fertile -> c.fertileSoft
+                        else -> Color.Transparent
+                    }
                     Box(
-                        Modifier.weight(1f).aspectRatio(1f)
-                            .then(if (selected == day) Modifier.border(2.dp, c.ink, shape).padding(3.dp) else Modifier)
-                            .clip(shape).background(bg)
-                            .then(if (m.predicted && !m.period && !m.today) Modifier.border(1.5.dp, c.period, shape) else Modifier)
-                            .alpha(if (!inMonth || disabled) 0.4f else 1f)
+                        Modifier.weight(1f).aspectRatio(1f).padding(3.dp)
+                            .alpha(if (!inMonth) 0.35f else if (disabled) 0.4f else 1f)
+                            .clip(CircleShape)
+                            .then(if (selected == day) Modifier.background(c.tan) else Modifier)
                             .combinedClickable(enabled = !disabled, role = Role.Button, onClick = { onSelect(day) },
                                 onLongClick = onLongPress?.let { f -> { f(day) } })
                             .semantics { contentDescription = "${Dates.long(day)}${if (m.describe().isNotEmpty()) ", " + m.describe() else ""}" },
                         contentAlignment = Alignment.Center,
                     ) {
-                        T(date.dayOfMonth.toString(), Tuulit.type.body.copy(fontWeight = if (m.today) FontWeight.Bold else FontWeight.Medium), fg)
-                        if (m.fertile) Box(Modifier.align(Alignment.BottomCenter).padding(bottom = 5.dp).size(5.dp).clip(CircleShape).background(c.fertile))
-                        if (m.logged) Box(Modifier.align(Alignment.TopEnd).padding(5.dp).size(4.dp).clip(CircleShape).background(if (m.period) c.onInk else c.toffee))
+                        Box(
+                            Modifier.fillMaxSize().padding(if (selected == day) 3.dp else 0.dp).clip(CircleShape).background(fill)
+                                .then(if (m.today) Modifier.border(3.dp, c.banana, CircleShape) else Modifier),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            T(date.dayOfMonth.toString(), Tuulit.type.body.copy(fontWeight = if (m.today || m.period) FontWeight.Bold else FontWeight.Medium),
+                                if (m.period) c.onPeriod else c.ink)
+                            if (m.logged) Box(Modifier.align(Alignment.BottomCenter).padding(bottom = 5.dp).size(5.dp).clip(CircleShape)
+                                .background(if (m.period) c.onPeriod else c.toffee))
+                        }
                     }
                 }
             }
@@ -170,9 +192,10 @@ fun MonthGrid(
 
 @Composable
 fun MonthHeader(month: YearMonth, onPrev: () -> Unit, onNext: () -> Unit, nextEnabled: Boolean = true) {
-    Row(Modifier.fillMaxWidth().padding(bottom = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+    Row(Modifier.fillMaxWidth().padding(bottom = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+        T(Dates.month(month.atDay(1)), Tuulit.type.headline, modifier = Modifier.weight(1f))
         IconBtn(TuulitIcons.ChevL, "Previous month", onPrev)
-        T(Dates.month(month.atDay(1)), Tuulit.type.headline, modifier = Modifier.weight(1f), align = androidx.compose.ui.text.style.TextAlign.Center)
+        Box(Modifier.width(8.dp))
         IconBtn(TuulitIcons.ChevR, "Next month", onNext, enabled = nextEnabled)
     }
 }

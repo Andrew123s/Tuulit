@@ -101,15 +101,21 @@ fun GameScreen(id: String, onBack: () -> Unit) {
         }
     }
     FixedScreen {
-        Row(Modifier.fillMaxWidth().height(56.dp), verticalAlignment = Alignment.CenterVertically) {
-            IconBtn(TuulitIcons.Close, "Close game", onBack)
-            T(info.title, Tuulit.type.label, modifier = Modifier.weight(1f), align = TextAlign.Center)
-            T("$liveScore", Tuulit.type.headline, modifier = Modifier.semantics { contentDescription = "Score $liveScore" })
+        val look = app.tuulit.ui.designsystem.gameLook(id)
+        Box(Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 12.dp).clip(RoundedCornerShape(28.dp)).background(look.bg)) {
+            app.tuulit.ui.designsystem.GameArt(id, Modifier.size(110.dp).align(Alignment.CenterEnd).padding(end = 60.dp))
+            Row(Modifier.fillMaxWidth().padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+                IconBtn(TuulitIcons.Close, "Close game", onBack)
+                Column(Modifier.weight(1f).padding(start = 12.dp)) {
+                    T(info.title, Tuulit.type.title, look.ink)
+                    T(if (best > 0) "Best $best" else info.kind, Tuulit.type.caption, look.ink)
+                }
+                Box(Modifier.size(58.dp).clip(CircleShape).background(Tuulit.colors.oat), contentAlignment = Alignment.Center) {
+                    T("$liveScore", Tuulit.type.headline, modifier = Modifier.semantics { contentDescription = "Score $liveScore" })
+                }
+            }
         }
-        Row(Modifier.fillMaxWidth().padding(bottom = 10.dp)) {
-            T(info.blurb, Tuulit.type.caption, Tuulit.colors.inkMuted, Modifier.weight(1f))
-            if (best > 0) T("Best $best", Tuulit.type.caption, Tuulit.colors.inkMuted)
-        }
+        T(info.blurb, Tuulit.type.caption, Tuulit.colors.inkMuted, Modifier.padding(bottom = 10.dp))
         Box(Modifier.weight(1f).fillMaxWidth()) {
             key(round.round) {
                 when (id) {
@@ -197,15 +203,28 @@ private fun BananaCatch(onScore: (Int) -> Unit, onEnd: (Int, String) -> Unit) {
                 items.forEach { f ->
                     val cx = f.x * w; val cy = f.y * h
                     if (f.rock) {
-                        drawOval(col.tan, Offset(cx - 16f * density, cy - 12f * density), Size(32f * density, 24f * density))
-                        drawOval(col.ink, Offset(cx - 16f * density, cy - 12f * density), Size(32f * density, 24f * density), style = Stroke(2f * density))
+                        // a soft grey pebble with a highlight
+                        drawOval(androidx.compose.ui.graphics.Color(0xFFB9ADA4), Offset(cx - 17f * density, cy - 12f * density), Size(34f * density, 24f * density))
+                        drawOval(androidx.compose.ui.graphics.Color(0xFFD8CFC8), Offset(cx - 9f * density, cy - 8f * density), Size(10f * density, 6f * density))
                     } else {
-                        drawArc(MascotColors.Banana, 20f, 140f, false, Offset(cx - 18f * density, cy - 22f * density), Size(36f * density, 36f * density),
-                            style = Stroke(9f * density, cap = androidx.compose.ui.graphics.StrokeCap.Round))
+                        // a plump banana crescent with a toffee tip
+                        val d = density
+                        val path = androidx.compose.ui.graphics.Path().apply {
+                            moveTo(cx - 19f * d, cy - 8f * d)
+                            quadraticTo(cx - 2f * d, cy + 22f * d, cx + 20f * d, cy - 6f * d)
+                            quadraticTo(cx, cy + 6f * d, cx - 19f * d, cy - 8f * d)
+                            close()
+                        }
+                        drawPath(path, MascotColors.Banana)
+                        drawPath(path, col.toffee.copy(alpha = 0.6f), style = Stroke(1.5f * d))
+                        drawCircle(col.toffee, 2.6f * d, Offset(cx + 20f * d, cy - 6f * d))
                     }
                 }
                 val bw = 96f * density
-                drawRoundRect(col.ink, Offset(basketX * w - bw / 2, h * 0.92f), Size(bw, 30f * density), CornerRadius(22f * density))
+                // a woven basket: toffee bowl with a coral rim
+                val bx = basketX * w - bw / 2
+                drawArc(col.toffee, 0f, 180f, true, Offset(bx + 4f * density, h * 0.92f - 20f * density), Size(bw - 8f * density, 52f * density))
+                drawRoundRect(col.periodDeep, Offset(bx, h * 0.92f - 2f * density), Size(bw, 9f * density), CornerRadius(5f * density))
             }
             T("Drag anywhere to move", Tuulit.type.caption, col.inkFaint, Modifier.align(Alignment.BottomCenter).padding(bottom = 4.dp))
         }
@@ -213,6 +232,9 @@ private fun BananaCatch(onScore: (Int) -> Unit, onEnd: (Int, String) -> Unit) {
 }
 
 // ---------------------------------------------------------------- Mood Match
+
+private fun matchColors(c: app.tuulit.ui.designsystem.TuulitColors) = listOf(c.periodSoft, c.fertileSoft, c.bananaSoft, c.roseSoft,
+    c.peachSoft, c.sand, c.fertileSoft, c.bananaSoft)
 
 private val matchSymbols: List<ImageVector> = listOf(TuulitIcons.Heat, TuulitIcons.Moon, TuulitIcons.Music, TuulitIcons.Care,
     TuulitIcons.Breath, TuulitIcons.Book, TuulitIcons.Food, TuulitIcons.Spark)
@@ -241,12 +263,13 @@ private fun MoodMatch(onScore: (Int) -> Unit, onEnd: (Int, String) -> Unit) {
                     val c = Tuulit.colors
                     val isUp = i in up; val isMatched = i in matched
                     Box(Modifier.weight(1f).aspectRatio(0.75f).clip(RoundedCornerShape(10.dp))
-                        .background(if (isMatched) c.ink else if (isUp) c.oat else c.tan)
+                        .background(if (isMatched) matchColors(c)[deck[i]] else if (isUp) c.oat else c.peach)
                         .then(if (isUp) Modifier.border(2.dp, c.ink, RoundedCornerShape(10.dp)) else Modifier)
                         .clickable(enabled = !isUp && !isMatched && up.size < 2, role = Role.Button) { up += i }
                         .semantics { contentDescription = if (isMatched || isUp) "Card ${deck[i] + 1}" else "Face-down card" },
                         contentAlignment = Alignment.Center) {
-                        if (isUp || isMatched) Icon(matchSymbols[deck[i]], null, Modifier.size(28.dp), tint = if (isMatched) c.onInk else c.ink)
+                        if (isUp || isMatched) Icon(matchSymbols[deck[i]], null, Modifier.size(28.dp), tint = c.ink)
+                        else Box(Modifier.size(20.dp).clip(androidx.compose.foundation.shape.CircleShape).background(c.peachSoft))
                     }
                 }
             }
@@ -277,7 +300,7 @@ private fun MemoryFlip(onScore: (Int) -> Unit, onEnd: (Int, String) -> Unit) {
         (0 until 9).chunked(3).forEach { row ->
             Row(Modifier.fillMaxWidth().padding(bottom = 10.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 row.forEach { i ->
-                    Box(Modifier.weight(1f).aspectRatio(1f).clip(RoundedCornerShape(16.dp)).background(if (lit == i) col.banana else col.sand)
+                    Box(Modifier.weight(1f).aspectRatio(1f).clip(RoundedCornerShape(16.dp)).background(if (lit == i) col.banana else col.fertileSoft)
                         .clickable(enabled = !showing, role = Role.Button) {
                             lit = i
                             if (sequence[input] == i) {
@@ -425,7 +448,7 @@ private fun CalmTap(onScore: (Int) -> Unit, onEnd: (Int, String) -> Unit) {
         Box(Modifier.size(260.dp), contentAlignment = Alignment.Center) {
             Box(Modifier.size(260.dp).border(2.dp, col.ink, CircleShape))
             Box(Modifier.size(232.dp).border(1.5.dp, col.inkFaint, CircleShape))
-            Box(Modifier.size(240.dp).scale(grow.value).clip(CircleShape).background(col.banana), contentAlignment = Alignment.Center) {
+            Box(Modifier.size(240.dp).scale(grow.value).clip(CircleShape).background(col.fertile), contentAlignment = Alignment.Center) {
                 T("Tap", Tuulit.type.label, col.onBanana)
             }
         }
@@ -502,7 +525,7 @@ private fun StressSmash(onScore: (Int) -> Unit, onEnd: (Int, String) -> Unit) {
                 row.forEach { i ->
                     val isCrushed = i in crushed
                     Box(Modifier.weight(1f).aspectRatio(1f).scale(if (hit == i) 0.9f else 1f).clip(RoundedCornerShape(12.dp))
-                        .background(if (hit == i) col.banana else if (isCrushed) col.cream else col.tan)
+                        .background(if (hit == i) col.banana else if (isCrushed) col.cream else col.periodSoft)
                         .then(if (isCrushed) Modifier.border(1.5.dp, col.hairline, RoundedCornerShape(12.dp)) else Modifier)
                         .clickable(enabled = !isCrushed, role = Role.Button) {
                             crushed = crushed + i; total++; hit = i; onScore(total)

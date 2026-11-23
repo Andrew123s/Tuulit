@@ -1,5 +1,56 @@
 # Changelog
 
+## 2.1.0 — 2026-11-23: warm, light-first UI redesign
+
+This release responds to tester feedback that 2.0 felt basic and depressing. Details are in `docs/UI_REDESIGN.md`.
+
+### Changed
+- **Theme:**
+  - the default theme is now Light (it was System, which put dark-mode phones on near-black)
+  - new palette: ivory, banana, coral, peach, dusty rose, muted lilac, cocoa
+  - selected states use soft colour instead of solid charcoal
+- **Home:**
+  - greeting
+  - phase-tinted hero with the cycle ring
+  - quick actions
+  - mood blobs
+  - recommendation and "What would help" cards
+- **Cycle:**
+  - summary card
+  - round calendar days
+  - pill legend
+- **Log:** colour-coded flow, mood, symptom tiles and a banana Done button.
+- **Care:**
+  - featured session
+  - category filter
+  - coloured carousel
+  - library preview
+- **Play:**
+  - featured game
+  - today's pick
+  - progress
+  - illustrated game grid
+  - coloured quizzes
+  - tinted game headers
+  - redrawn Banana Catch
+- **Ask:**
+  - hero with the mascot
+  - six shortcuts
+  - mascot avatar
+  - formatted bubbles
+  - typing dots
+- **Navigation:** floating pill tab bar and the banana Log button.
+- **You and settings:**
+  - profile card
+  - grouped panel
+  - coloured icon tiles on every list row
+- Insights, pain scale, PIN, Connect, quizzes and sheets have been recoloured.
+
+### Added
+- `ui/designsystem/Illustrations.kt`: blobs, `CycleRing`, `MoodBlob`, spot illustrations and per-game art.
+- Mascot blush cheeks.
+
+
 ## 2.0.0 — 2026-11-22: full implementation of the approved design
 
 ### Added

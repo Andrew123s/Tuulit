@@ -1,6 +1,6 @@
 # Implementation status
 
-Updated 2026-11-22.
+Updated 2026-11-23.
 
 Legend:
 - ✅ **Completed and tested**: automated tests and/or verified on the emulator.
@@ -10,6 +10,18 @@ Legend:
 - ⚪ **Not started**
 
 The emulator used was Pixel-class, API 35, software-rendered. On-device checks: onboarding, Today, log composer, Cycle month, Care Comfort, Play hub, Stress Smash through to its result, Ask (not-configured state) and You.
+
+## UI redesign (2.1.0)
+
+See [UI_REDESIGN.md](UI_REDESIGN.md).
+
+| Item | Status | Notes |
+|---|---|---|
+| Light-first warm palette; default theme is now Light | ✅ | Verified on the emulator. Warm dark is still available in Appearance. |
+| Illustration system (blobs, cycle ring, mood blobs, spot art, game art) | ✅ | Canvas only, no image assets. |
+| Home, Cycle, Log, Care, Play, Ask, navigation | ✅ | Each one screenshotted on the emulator after the change. |
+| You, Connect, Insights, Pain, Auth PIN, quizzes, sheets, Welcome | ✅ | You and Connect were checked on the emulator. The others are colour-only changes covered by the build. |
+| Unit and Compose UI tests | ✅ | 44 tests, 0 failures. |
 
 ## Foundation
 

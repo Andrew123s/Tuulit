@@ -25,8 +25,8 @@ android {
     applicationId = "app.tuulit"
     minSdk = 26
     targetSdk = 36
-    versionCode = 2
-    versionName = "2.0.0"
+    versionCode = 3
+    versionName = "2.1.0"
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
     buildConfigField("String", "TUULIT_API_BASE_URL", "\"${setting("TUULIT_API_BASE_URL")}\"")

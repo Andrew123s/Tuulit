@@ -202,7 +202,7 @@ fun PinDots(filled: Int, total: Int, modifier: Modifier = Modifier) {
         repeat(total) { i ->
             Box(
                 Modifier.size(14.dp).clip(CircleShape)
-                    .then(if (i < filled) Modifier.background(col.ink) else Modifier.border(1.5.dp, col.inkFaint, CircleShape))
+                    .then(if (i < filled) Modifier.background(col.period) else Modifier.border(1.5.dp, col.tan, CircleShape))
             )
         }
     }

@@ -44,6 +44,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.rotate
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
@@ -135,37 +138,55 @@ enum class Tab(val route: String, val label: String, val icon: ImageVector) {
     ASK("ask", "Ask", TuulitIcons.Ask),
 }
 
+/**
+ * Floating tab bar: an ivory pill that sits above the page, with a soft tinted pill behind the
+ * active tab and the banana Log button as Tuulit's signature centre action.
+ */
 @Composable
 fun TabBar(current: String?, onTab: (Tab) -> Unit, onLog: () -> Unit) {
     val c = Tuulit.colors
-    Column(Modifier.fillMaxWidth().background(c.cream)) {
-        Box(Modifier.fillMaxWidth().height(1.dp).background(c.hairline))
-        Row(Modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.navigationBars).height(64.dp).padding(horizontal = 8.dp),
-            verticalAlignment = Alignment.CenterVertically) {
+    Box(Modifier.fillMaxWidth().background(c.cream).windowInsetsPadding(WindowInsets.navigationBars)
+        .padding(start = 14.dp, end = 14.dp, bottom = 10.dp, top = 4.dp)) {
+        Row(
+            Modifier.fillMaxWidth().height(68.dp).shadow(14.dp, androidx.compose.foundation.shape.RoundedCornerShape(34.dp), ambientColor = c.period, spotColor = c.period)
+                .clip(androidx.compose.foundation.shape.RoundedCornerShape(34.dp)).background(c.oat).padding(horizontal = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             val tabs = Tab.entries
             tabs.take(2).forEach { TabItem(it, current == it.route) { onTab(it) } }
-            Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                Box(
-                    Modifier.offset(y = (-14).dp).size(60.dp).shadow(10.dp, CircleShape).clip(CircleShape).background(c.banana)
-                        .clickable(role = Role.Button, onClickLabel = "Log today", onClick = onLog)
-                        .semantics { contentDescription = "Log" },
-                    contentAlignment = Alignment.Center,
-                ) { Icon(TuulitIcons.Plus, null, Modifier.size(28.dp), tint = c.onBanana) }
-            }
+            Box(Modifier.weight(1f))
             tabs.drop(2).forEach { TabItem(it, current == it.route) { onTab(it) } }
         }
+        LogButton(onLog, Modifier.align(Alignment.TopCenter).offset(y = (-18).dp))
     }
+}
+
+@Composable
+private fun LogButton(onLog: () -> Unit, modifier: Modifier) {
+    val c = Tuulit.colors
+    val interaction = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    val scale by androidx.compose.animation.core.animateFloatAsState(if (pressed) 0.9f else 1f, label = "log")
+    val turn by androidx.compose.animation.core.animateFloatAsState(if (pressed) 90f else 0f, label = "turn")
+    Box(
+        modifier.size(66.dp).scale(scale).shadow(12.dp, CircleShape, ambientColor = c.banana, spotColor = c.banana).clip(CircleShape)
+            .background(c.oat).padding(5.dp).clip(CircleShape).background(c.banana)
+            .clickable(interaction, null, role = Role.Button, onClickLabel = "Log today", onClick = onLog)
+            .semantics { contentDescription = "Log" },
+        contentAlignment = Alignment.Center,
+    ) { Icon(TuulitIcons.Plus, null, Modifier.size(28.dp).rotate(turn), tint = c.onBanana) }
 }
 
 @Composable
 private fun androidx.compose.foundation.layout.RowScope.TabItem(tab: Tab, on: Boolean, onClick: () -> Unit) {
     val c = Tuulit.colors
+    val bg by androidx.compose.animation.animateColorAsState(if (on) c.peachSoft else c.oat, label = "tab")
     Column(
-        Modifier.weight(1f).clickable(role = Role.Tab, onClick = onClick).semantics { selected = on }.padding(vertical = 6.dp),
-        horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(3.dp),
+        Modifier.weight(1f).padding(horizontal = 2.dp).clip(androidx.compose.foundation.shape.RoundedCornerShape(24.dp)).background(bg)
+            .clickable(role = Role.Tab, onClick = onClick).semantics { selected = on }.padding(vertical = 8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
-        Box(Modifier.size(4.dp).clip(CircleShape).background(if (on) c.ink else c.cream))
-        Icon(tab.icon, null, Modifier.size(24.dp), tint = if (on) c.ink else c.inkMuted)
+        Icon(tab.icon, null, Modifier.size(24.dp), tint = if (on) c.periodDeep else c.inkMuted)
         T(tab.label, Tuulit.type.tab, if (on) c.ink else c.inkMuted)
     }
 }

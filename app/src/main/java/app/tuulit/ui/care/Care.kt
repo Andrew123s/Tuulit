@@ -4,10 +4,29 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import app.tuulit.domain.Dates
+import app.tuulit.ui.designsystem.Blob
+import app.tuulit.ui.designsystem.Chip
+import app.tuulit.ui.designsystem.GameArt
+import app.tuulit.ui.designsystem.Illo
+import app.tuulit.ui.designsystem.Illustration
+import app.tuulit.ui.designsystem.Mascot
+import app.tuulit.ui.designsystem.MascotMood
+import app.tuulit.ui.designsystem.gameLook
+import app.tuulit.ui.designsystem.illoFor
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -66,61 +85,221 @@ fun CareScreen(initialSegment: Int, go: (String) -> Unit) {
     var seg by rememberSaveable { mutableIntStateOf(initialSegment) }
     val c = container()
     val snap by c.cycleState.snapshot.collectAsState()
-    val headline = when (seg) { 0 -> CareContent.heroHeadline(snap.todayLog); 1 -> "Two minutes of not thinking about it."; else -> "What works for you." }
+    val col = Tuulit.colors
+    val crampy = snap.todayLog?.symptoms?.containsKey("Cramps") == true
+    val (kicker, headline, bg, mood) = when (seg) {
+        0 -> CareHead(if (crampy) "You logged cramps today" else "Tuulit Care", CareContent.heroHeadline(snap.todayLog), col.peachSoft,
+            if (crampy) MascotMood.CRAMPS else MascotMood.CHILL)
+        1 -> CareHead("Tuulit Play", "Two minutes of not thinking about it.", col.bananaSoft, MascotMood.HAPPY)
+        else -> CareHead("Your library", "What works for you.", col.roseSoft, MascotMood.WARM)
+    }
     ScreenColumn {
-        ScreenHeader(when { seg == 0 && snap.todayLog?.symptoms?.containsKey("Cramps") == true -> "You logged cramps today"; else -> "Care" }, headline)
+        Box(Modifier.fillMaxWidth().padding(top = 14.dp).clip(RoundedCornerShape(32.dp)).background(bg)) {
+            Blob(col.oat.copy(alpha = 0.6f), Modifier.size(150.dp).align(Alignment.CenterEnd).offset(x = 30.dp), seed = 4)
+            Mascot(mood, 92.dp, Modifier.align(Alignment.CenterEnd).padding(end = 18.dp))
+            Column(Modifier.padding(start = 22.dp, top = 22.dp, bottom = 22.dp, end = 120.dp)) {
+                Overline(kicker, col.toffee)
+                T(headline, Tuulit.type.headline, modifier = Modifier.padding(top = 6.dp))
+            }
+        }
         Segmented(listOf("Comfort", "Play", "Library"), seg, { seg = it }, Modifier.padding(vertical = 16.dp))
         when (seg) {
-            0 -> Comfort(go)
+            0 -> Comfort(go) { seg = 2 }
             1 -> PlayHub(go)
             else -> Library(go)
         }
     }
 }
 
+private data class CareHead(val kicker: String, val headline: String, val bg: androidx.compose.ui.graphics.Color, val mood: MascotMood)
+
+private enum class CareCat(val label: String) { ALL("All"), CRAMPS("Cramps"), RELAX("Relaxation"), SLEEP("Sleep"), MOVE("Movement"), MOOD("Mood"), BREATH("Breathing") }
+
+private fun matches(cat: CareCat, s: app.tuulit.domain.CareSession) = when (cat) {
+    CareCat.ALL -> true
+    CareCat.CRAMPS -> s.category == "Cramps"
+    CareCat.RELAX -> s.category == "Calm" || s.category == "Sleep"
+    CareCat.SLEEP -> s.category == "Sleep"
+    CareCat.MOVE -> s.id == "gentle_stretches"
+    CareCat.MOOD -> s.category == "Mood"
+    CareCat.BREATH -> s.breathing != null
+}
+
 @Composable
-private fun Comfort(go: (String) -> Unit) {
+private fun sessionColor(s: app.tuulit.domain.CareSession): androidx.compose.ui.graphics.Color {
+    val c = Tuulit.colors
+    return when (s.category) { "Cramps" -> c.periodSoft; "Calm" -> c.fertileSoft; "Sleep" -> c.fertileSoft; "Mood" -> c.roseSoft; else -> c.peachSoft }
+}
+
+@Composable
+private fun Comfort(go: (String) -> Unit, openLibrary: () -> Unit) {
     val c = container()
+    val col = Tuulit.colors
     val snap by c.cycleState.snapshot.collectAsState()
+    val items by c.carePlay.comfortItems.collectAsState(initial = emptyList())
     val hero = CareContent.heroFor(snap.todayLog, snap.prediction.currentPhase)
-    Panel(padding = 18.dp) {
+    var cat by rememberSaveable { mutableStateOf(CareCat.ALL) }
+    var flagsOpen by remember { mutableStateOf(false) }
+
+    // Featured experience
+    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(32.dp)).background(sessionColor(hero)).clickable(role = androidx.compose.ui.semantics.Role.Button) { go("session/${hero.id}") }.padding(20.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Overline("Start here · ${hero.minutesLabel}", Tuulit.colors.toffee, Modifier.weight(1f))
-            Icon(TuulitIcons.named(hero.icon), null, tint = Tuulit.colors.toffee)
+            Column(Modifier.weight(1f)) {
+                Overline("Made for today · ${hero.minutesLabel}", col.toffee)
+                T(hero.title, Tuulit.type.display, modifier = Modifier.padding(top = 4.dp))
+                T(hero.summary, Tuulit.type.bodySm, col.inkMuted, Modifier.padding(top = 6.dp))
+            }
+            Illustration(illoFor(hero.icon), 110.dp, bg = col.oat)
         }
-        T(hero.title, Tuulit.type.title, modifier = Modifier.padding(top = 6.dp, bottom = 10.dp))
-        hero.steps.take(3).forEachIndexed { i, s -> T("${i + 1}. ${s.title}", Tuulit.type.bodySm, Tuulit.colors.inkMuted, Modifier.padding(bottom = 4.dp)) }
-        TButton("Start", { go("session/${hero.id}") }, Modifier.fillMaxWidth().padding(top = 12.dp))
+        Row(Modifier.padding(top = 14.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            hero.steps.take(3).forEachIndexed { i, st ->
+                T("${i + 1}  ${st.title}", Tuulit.type.caption, col.ink, Modifier.clip(RoundedCornerShape(999.dp)).background(col.oat).padding(horizontal = 10.dp, vertical = 6.dp), maxLines = 1)
+            }
+        }
+        TButton("Start", { go("session/${hero.id}") }, Modifier.fillMaxWidth().padding(top = 16.dp), icon = TuulitIcons.Breath)
     }
-    GroupTitle("Also good right now", Modifier.padding(top = 20.dp, bottom = 6.dp))
-    TileGrid(CareContent.all.filter { it.id != hero.id }.map { s ->
-        { m: Modifier -> Tile(s.title, "${s.category} · ${s.minutesLabel}", TuulitIcons.named(s.icon), { go("session/${s.id}") }, m) }
-    })
-    GroupTitle("When to see a doctor", Modifier.padding(top = 20.dp))
-    CareContent.redFlags.forEachIndexed { i, f -> ListRow(f, icon = TuulitIcons.Alert, last = i == CareContent.redFlags.lastIndex) }
-    T("If any of these happen, contact a clinician or emergency services.", Tuulit.type.caption, Tuulit.colors.inkFaint, Modifier.padding(top = 8.dp))
+
+    // Categories + carousel
+    T("Find what you need", Tuulit.type.title, modifier = Modifier.padding(top = 26.dp, bottom = 10.dp))
+    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        items(CareCat.entries) { k -> Chip(k.label, cat == k, { cat = k }) }
+    }
+    val shown = CareContent.all.filter { matches(cat, it) }
+    LazyRow(Modifier.padding(top = 14.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        items(shown, key = { it.id }) { s ->
+            Column(Modifier.width(168.dp).height(222.dp).clip(RoundedCornerShape(28.dp)).background(sessionColor(s))
+                .clickable(role = androidx.compose.ui.semantics.Role.Button) { go("session/${s.id}") }.padding(16.dp)) {
+                Illustration(illoFor(s.icon), 72.dp, bg = col.oat)
+                T(s.title, Tuulit.type.title, modifier = Modifier.padding(top = 12.dp), maxLines = 2)
+                T("${s.category} · ${s.minutesLabel}", Tuulit.type.caption, col.inkMuted, Modifier.padding(top = 4.dp))
+            }
+        }
+    }
+
+    // Comfort library preview
+    val mine = items.filter { it.kind == "comfort" }.sortedByDescending { it.helpedCount }.take(3)
+    Row(Modifier.padding(top = 26.dp), verticalAlignment = Alignment.CenterVertically) {
+        T("Your comfort library", Tuulit.type.title, modifier = Modifier.weight(1f))
+        TButton("Open", openLibrary, kind = ButtonKind.TEXT)
+    }
+    if (mine.isEmpty()) {
+        T("Finish a session or add what helps you, and it shows up here.", Tuulit.type.bodySm, col.inkMuted, Modifier.padding(top = 4.dp))
+    } else Column(Modifier.padding(top = 6.dp).clip(RoundedCornerShape(24.dp)).background(col.oat).padding(horizontal = 16.dp)) {
+        mine.forEachIndexed { i, it ->
+            ListRow(it.title, sub = if (it.helpedCount > 0) "Helped ${it.helpedCount} ${if (it.helpedCount == 1) "time" else "times"}" else it.detail.ifBlank { null },
+                leading = { Illustration(illoFor(it.icon), 40.dp, bg = col.peachSoft) }, last = i == mine.lastIndex,
+                onClick = it.sessionId?.let { sid -> { go("session/$sid") } })
+        }
+    }
+
+    // Red flags, folded
+    Column(Modifier.padding(top = 20.dp).fillMaxWidth().clip(RoundedCornerShape(24.dp)).background(col.alertSoft)
+        .clickable(role = androidx.compose.ui.semantics.Role.Button) { flagsOpen = !flagsOpen }.padding(16.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(TuulitIcons.Alert, null, tint = col.alert)
+            T("When to see a doctor", Tuulit.type.subtitle, modifier = Modifier.weight(1f).padding(start = 10.dp))
+            Icon(TuulitIcons.ChevD, if (flagsOpen) "Collapse" else "Expand", tint = col.ink)
+        }
+        if (flagsOpen) {
+            CareContent.redFlags.forEach { f -> T("•  $f", Tuulit.type.bodySm, col.ink, Modifier.padding(top = 8.dp)) }
+            T("If any of these happen, contact a clinician or emergency services.", Tuulit.type.caption, col.inkMuted, Modifier.padding(top = 10.dp))
+        }
+    }
 }
 
 @Composable
 private fun PlayHub(go: (String) -> Unit) {
     val c = container()
+    val col = Tuulit.colors
     val scores by c.carePlay.gameScores.collectAsState(initial = emptyMap())
-    TileGrid(PlayContent.games.map { g ->
-        { m: Modifier ->
-            val best = scores[g.id]?.best
-            Tile(g.title, if (best != null && best > 0) "${g.kind} · best $best" else g.kind, TuulitIcons.named(g.icon), { go("game/${g.id}") }, m)
-        }
-    })
-    GroupTitle("Quizzes", Modifier.padding(top = 20.dp))
-    PlayContent.quizzes.forEachIndexed { i, q ->
-        ListRow(q.title, sub = q.subtitle, icon = TuulitIcons.named(q.icon), chevron = true, last = i == PlayContent.quizzes.lastIndex, onClick = { go("quiz/${q.id}") })
-    }
     val achievements by c.carePlay.achievements.collectAsState(initial = emptyList())
-    if (achievements.isNotEmpty()) {
-        GroupTitle("Moments", Modifier.padding(top = 20.dp))
-        achievements.forEachIndexed { i, a -> ListRow(a.achievement.title, sub = a.achievement.description, icon = TuulitIcons.Spark, last = i == achievements.lastIndex) }
+    val featured = PlayContent.game("banana_catch")
+    val daily = PlayContent.games[(Dates.today() % PlayContent.games.size).toInt().let { if (it < 0) -it else it }]
+    val plays = scores.values.sumOf { it.plays }
+
+    // Featured game
+    val look = gameLook(featured.id)
+    Box(Modifier.fillMaxWidth().clip(RoundedCornerShape(32.dp)).background(look.bg)
+        .clickable(role = androidx.compose.ui.semantics.Role.Button) { go("game/${featured.id}") }) {
+        GameArt(featured.id, Modifier.size(170.dp).align(Alignment.CenterEnd))
+        Column(Modifier.padding(start = 22.dp, top = 22.dp, bottom = 22.dp, end = 150.dp)) {
+            Overline("Featured game", look.ink)
+            T(featured.title, Tuulit.type.display, look.ink, Modifier.padding(top = 4.dp))
+            T(featured.blurb, Tuulit.type.bodySm, look.ink, Modifier.padding(top = 4.dp))
+            scores[featured.id]?.best?.takeIf { it > 0 }?.let { T("Your best: $it", Tuulit.type.label, look.ink, Modifier.padding(top = 8.dp)) }
+            TButton("Play now", { go("game/${featured.id}") }, Modifier.padding(top = 14.dp))
+        }
     }
-    T("Scores are personal bests. There are no streaks to keep.", Tuulit.type.caption, Tuulit.colors.inkFaint, Modifier.padding(top = 12.dp))
+
+    // Daily pick + progress
+    Row(Modifier.padding(top = 14.dp).height(androidx.compose.foundation.layout.IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Column(Modifier.weight(1.2f).fillMaxHeight().clip(RoundedCornerShape(28.dp)).background(gameLook(daily.id).bg)
+            .clickable(role = androidx.compose.ui.semantics.Role.Button) { go("game/${daily.id}") }.padding(16.dp)) {
+            Overline("Today's pick", gameLook(daily.id).ink)
+            T(daily.title, Tuulit.type.title, gameLook(daily.id).ink, Modifier.padding(top = 4.dp))
+            val best = scores[daily.id]?.best ?: 0
+            T(if (best > 0) "Beat your best of $best" else "Give it a first try", Tuulit.type.caption, gameLook(daily.id).ink, Modifier.padding(top = 4.dp))
+        }
+        Column(Modifier.weight(1f).fillMaxHeight().clip(RoundedCornerShape(28.dp)).background(col.oat).padding(16.dp)) {
+            T("$plays", Tuulit.type.display)
+            T(if (plays == 1) "game played" else "games played", Tuulit.type.caption, col.inkMuted)
+            T("${achievements.size} moments", Tuulit.type.label, col.toffee, Modifier.padding(top = 6.dp))
+        }
+    }
+
+    // All games: each with its own artwork and colour
+    T("All games", Tuulit.type.title, modifier = Modifier.padding(top = 26.dp, bottom = 10.dp))
+    PlayContent.games.filter { it.id != featured.id }.chunked(2).forEach { pair ->
+        Row(Modifier.padding(bottom = 12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            pair.forEach { g ->
+                val lk = gameLook(g.id)
+                Column(Modifier.weight(1f).clip(RoundedCornerShape(28.dp)).background(col.oat)
+                    .clickable(role = androidx.compose.ui.semantics.Role.Button) { go("game/${g.id}") }) {
+                    Box(Modifier.fillMaxWidth().height(110.dp).clip(RoundedCornerShape(28.dp)).background(lk.bg)) {
+                        GameArt(g.id, Modifier.fillMaxSize())
+                    }
+                    Column(Modifier.padding(start = 14.dp, end = 14.dp, top = 10.dp, bottom = 14.dp)) {
+                        T(g.title, Tuulit.type.subtitle, maxLines = 1)
+                        val best = scores[g.id]?.best
+                        T(if (best != null && best > 0) "${g.kind} · best $best" else g.kind, Tuulit.type.caption, col.inkMuted)
+                    }
+                }
+            }
+            if (pair.size == 1) Box(Modifier.weight(1f))
+        }
+    }
+
+    // Quizzes
+    T("Quizzes", Tuulit.type.title, modifier = Modifier.padding(top = 14.dp, bottom = 10.dp))
+    val quizColors = listOf(col.roseSoft, col.fertileSoft, col.peachSoft, col.bananaSoft)
+    LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        items(PlayContent.quizzes.size) { i ->
+            val q = PlayContent.quizzes[i]
+            Column(Modifier.width(200.dp).height(196.dp).clip(RoundedCornerShape(28.dp)).background(quizColors[i % quizColors.size])
+                .clickable(role = androidx.compose.ui.semantics.Role.Button) { go("quiz/${q.id}") }.padding(18.dp)) {
+                Box(Modifier.size(44.dp).clip(CircleShape).background(col.oat), contentAlignment = Alignment.Center) {
+                    Icon(TuulitIcons.named(q.icon), null, tint = col.ink)
+                }
+                T(q.title, Tuulit.type.title, modifier = Modifier.padding(top = 12.dp), maxLines = 2)
+                T(q.subtitle, Tuulit.type.caption, col.inkMuted, Modifier.padding(top = 4.dp), maxLines = 2)
+            }
+        }
+    }
+
+    // Moments
+    if (achievements.isNotEmpty()) {
+        T("Moments", Tuulit.type.title, modifier = Modifier.padding(top = 24.dp, bottom = 10.dp))
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            items(achievements.size) { i ->
+                val a = achievements[i]
+                Column(Modifier.width(120.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Illustration(Illo.SPARK, 64.dp, bg = col.bananaSoft)
+                    T(a.achievement.title, Tuulit.type.caption, col.ink, Modifier.padding(top = 6.dp), align = TextAlign.Center, maxLines = 2)
+                }
+            }
+        }
+    }
+    T("Scores are personal bests. There are no streaks to keep.", Tuulit.type.caption, col.inkFaint, Modifier.padding(top = 16.dp))
 }
 
 @Composable
