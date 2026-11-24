@@ -13,7 +13,7 @@ The user's private root document. The rules allow only that user to read or writ
 | Field | Written by | Contents |
 |---|---|---|
 | `lastBackupAt` | both platforms | server timestamp |
-| `settings` | **iOS only for now** | map: see "Settings sync" below |
+| `settings` | both platforms | map: see "Settings sync" below |
 
 ### Subcollections of `users/{uid}`
 
@@ -71,9 +71,9 @@ These are ported from Android's `SyncRepository` and live in `TuulitCore/SyncMer
   - Games and achievements are keyed by ID.
 - A connection banner appears in Account and Connect when the network monitor (`NWPathMonitor`) reports no connection.
 
-## Cross-platform gaps that need an Android change
+## Cross-platform gaps (resolved 2026-11-24)
 
-**Not done yet.** These need your approval, because the brief says not to modify Android.
+All four changes are now made and tested. Items 1 to 3 were approved by you on 2026-11-24.
 
 1. **Android pulls only at sign-in.** In `TuulitApp.start()`, a full pull runs only when the auth state changes. Proposed fix: also call `sync.sync(fullPull = true)` in `onStart` of the process lifecycle while signed in. Until then, records made on iOS appear on Android only after the user signs in again there.
 2. **Settings sync.** iOS mirrors these settings to `users/{uid}.settings`:

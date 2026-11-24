@@ -28,6 +28,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
@@ -88,6 +89,10 @@ class AppContainer(context: Context) {
                 .collect { if (prefs.current().onboardingCompleted) ReminderScheduler.reschedule(appContext, prefs.current()) }
         }
         publishSharedStatus()
+        // Settings that follow the person between devices are pushed like any other change.
+        appScope.launch {
+            prefs.settings.map { it.syncedSettingsUpdatedAt }.distinctUntilChanged().drop(1).collect { scheduleSync() }
+        }
         // On sign-in: restore and merge the cloud backup, then register this device for Connect pushes.
         appScope.launch {
             auth.state.map { (it as? AuthState.SignedIn)?.uid }.distinctUntilChanged().collect { uid ->
@@ -112,6 +117,12 @@ class AppContainer(context: Context) {
     }
 
     /** Debounced push: many quick taps in the log composer become one Firestore batch. */
+    /** Full pull + push, used when the app returns to the foreground while signed in. */
+    fun syncOnForeground() {
+        if (auth.currentUid == null) return
+        appScope.launch { sync.sync(fullPull = true) }
+    }
+
     fun scheduleSync() {
         if (auth.currentUid == null) return
         syncJob?.cancel()

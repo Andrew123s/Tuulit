@@ -1,6 +1,7 @@
 package app.tuulit.data.remote
 
 import android.util.Log
+import app.tuulit.data.CarePlayRepository
 import app.tuulit.data.local.AchievementEntity
 import app.tuulit.data.local.ComfortItemEntity
 import app.tuulit.data.local.CycleEntity
@@ -92,8 +93,12 @@ class SyncRepository(
             chunk.forEach { (ref, data) -> batch.set(ref, data) }
             batch.commit().await()
         }
-        if (writes.isNotEmpty() || since == 0L) {
-            userDoc(db, uid).set(mapOf("lastBackupAt" to FieldValue.serverTimestamp()), SetOptions.merge()).await()
+        val s = prefs.current()
+        val settingsChanged = s.syncedSettingsUpdatedAt > since || since == 0L
+        if (writes.isNotEmpty() || settingsChanged) {
+            val rootFields = mutableMapOf<String, Any?>("lastBackupAt" to FieldValue.serverTimestamp())
+            if (settingsChanged) rootFields["settings"] = s.syncedMap()
+            userDoc(db, uid).set(rootFields, SetOptions.merge()).await()
         }
         return writes.size
     }
@@ -138,6 +143,17 @@ class SyncRepository(
             val local = dao.comfortItem(d.id)
             if (local == null || local.updatedAt < remote.updatedAt) { dao.upsertComfortItem(remote); n++ }
         }
+        // The cloud already has a kit (e.g. from another phone): retire this device's untouched starter seed.
+        val remoteComfort = root.collection("comfort").get().await().documents
+        if (remoteComfort.any { it.getString("kind") == "kit" && it.getBoolean("deleted") != true }) {
+            CarePlayRepository.SEED_IDS.forEach { id ->
+                val seed = dao.comfortItem(id)
+                if (seed != null && !seed.deleted && seed.updatedAt == 0L && remoteComfort.none { it.id == id }) dao.upsertComfortItem(seed.copy(deleted = true))
+            }
+        }
+        // Settings that follow the person between devices (users/{uid}.settings), last write wins.
+        @Suppress("UNCHECKED_CAST")
+        (root.get().await().get("settings") as? Map<String, Any?>)?.let { prefs.applyRemoteSettings(it) }
         root.collection("games").get().await().documents.forEach { d ->
             val local = dao.gameScore(d.id)
             val best = maxOf(local?.bestScore ?: 0, d.int("bestScore"))

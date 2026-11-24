@@ -97,6 +97,8 @@ class MainActivity : ComponentActivity() {
         override fun onStop(owner: LifecycleOwner) { backgroundedAt = System.currentTimeMillis() }
         override fun onStart(owner: LifecycleOwner) {
             if (backgroundedAt > 0 && System.currentTimeMillis() - backgroundedAt > 60_000) c.unlocked.value = false
+            // Back from the background: pick up anything logged on another device (e.g. an iPhone).
+            if (backgroundedAt > 0) c.syncOnForeground()
         }
     }
 

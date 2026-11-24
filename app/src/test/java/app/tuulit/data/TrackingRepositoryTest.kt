@@ -122,6 +122,9 @@ class TrackingRepositoryTest {
     @Test fun sessionsCreditLibraryAndAchievementsOnce() = runTest {
         care.seedLibraryIfEmpty(); care.seedLibraryIfEmpty()
         assertEquals(4, care.comfortItems.first().count { it.kind == "kit" })
+        // Fixed IDs, never pushed until touched, so another device can't duplicate the kit.
+        assertEquals(CarePlayRepository.SEED_IDS, care.comfortItems.first().filter { it.kind == "kit" }.map { it.id })
+        assertTrue(care.comfortItems.first().filter { it.kind == "kit" }.all { it.updatedAt == 0L })
         val first = care.completeSession("slow_breathing", fully = true)
         assertTrue(Achievement.FIRST_SESSION in first)
         care.completeSession("slow_breathing", fully = true)

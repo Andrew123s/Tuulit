@@ -1,0 +1,7 @@
+{
+  "projects": {
+    "staging": "tuulit-prod"
+  },
+  "targets": {},
+  "etags": {}
+}

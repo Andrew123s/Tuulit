@@ -42,3 +42,7 @@ DerivedData/
 xcuserdata/
 *.xcuserstate
 Screen_Recording_*.mp4
+
+# Firebase Admin SDK keys (never commit)
+*firebase-adminsdk*.json
+backend/*.json

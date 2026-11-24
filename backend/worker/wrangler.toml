@@ -10,16 +10,17 @@ compatibility_date = "2025-05-01"
 workers_dev = true
 
 [vars]
-FIREBASE_PROJECT_ID = "REPLACE_WITH_FIREBASE_PROJECT_ID"
-FIREBASE_PROJECT_NUMBER = "REPLACE_WITH_FIREBASE_PROJECT_NUMBER"
+FIREBASE_PROJECT_ID = "tuulit-prod"
+FIREBASE_PROJECT_NUMBER = "759501570893"
 APP_CHECK_MODE = "monitor"          # off | monitor | enforce  (enforce once Play Integrity is set up)
-AI_PROVIDER = "anthropic"           # anthropic | openai_compatible
-AI_MODEL = "claude-haiku-5-5"       # any model the provider offers; Haiku keeps cost low
+AI_PROVIDER = "openai_compatible"           # anthropic | openai_compatible
+AI_MODEL = "gemini-3.6-flash"       # any model the provider offers; a small fast model keeps cost low
+AI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai"
 AI_DAILY_LIMIT = "60"               # questions per user per day
-BREVO_SENDER_EMAIL = "REPLACE_WITH_VERIFIED_SENDER@yourdomain"
+BREVO_SENDER_EMAIL = "hello@tuulit.app"
 BREVO_SENDER_NAME = "Tuulit"
 APP_NAME = "Tuulit"
-PUBLIC_BASE_URL = "https://tuulit-api.REPLACE_WITH_SUBDOMAIN.workers.dev"
+PUBLIC_BASE_URL = "https://tuulit-api.mybeatstar.workers.dev"
 
 [[r2_buckets]]
 binding = "MEDIA"
@@ -27,7 +28,7 @@ bucket_name = "tuulit-media"
 
 [[kv_namespaces]]
 binding = "RATE"
-id = "REPLACE_WITH_KV_NAMESPACE_ID"
+id = "b401cb9ba461485d9debaffc96020e43"
 
 [observability]
 enabled = true

@@ -26,12 +26,21 @@ class CarePlayRepository(
         l.mapNotNull { e -> runCatching { Achievement.valueOf(e.code) }.getOrNull()?.let { UnlockedAchievement(it, e.unlockedAt) } }
     }
 
-    /** First-run library: a starting bag checklist the person can edit or delete. Only seeded once. */
+    /**
+     * First-run library: a starting bag checklist the person can edit or delete. Only seeded once.
+     * Fixed IDs and updatedAt = 0 mean an untouched seed is never pushed, and a second device
+     * (Android or iPhone) can't duplicate it; the same rule is used by the iOS app.
+     */
     suspend fun seedLibraryIfEmpty() {
         if (dao.comfortItemCount() > 0) return
-        listOf("Pads or tampons", "Spare underwear", "Painkillers", "Wipes").forEachIndexed { i, t ->
-            dao.upsertComfortItem(ComfortItemEntity(kind = "kit", title = t, icon = "check", position = i, updatedAt = now()))
+        SEED_TITLES.forEachIndexed { i, t ->
+            dao.upsertComfortItem(ComfortItemEntity(id = SEED_IDS[i], kind = "kit", title = t, icon = "check", position = i, updatedAt = 0L))
         }
+    }
+
+    companion object {
+        val SEED_TITLES = listOf("Pads or tampons", "Spare underwear", "Painkillers", "Wipes")
+        val SEED_IDS = SEED_TITLES.indices.map { "seed-kit-$it" }
     }
 
     suspend fun addComfortItem(kind: String, title: String, detail: String, icon: String) {
