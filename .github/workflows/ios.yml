@@ -44,26 +44,43 @@ jobs:
           set -o pipefail
           xcodebuild build-for-testing -project Tuulit.xcodeproj -scheme Tuulit             -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO | tee build.log | grep -E "error:|warning: unre|BUILD" || true
           grep -q "TEST BUILD SUCCEEDED" build.log
-      - name: Test on small, standard and large iPhones
+      - name: Pick simulators
+        id: sims
+        run: |
+          xcrun simctl list devices available -j > devs.json
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import json
+          devs = [d for r, ds in json.load(open("devs.json"))["devices"].items() if "iOS" in r for d in ds if d["name"].startswith("iPhone")]
+          def pick(pred):
+              m = [d for d in devs if pred(d["name"])]
+              return m[-1] if m else None
+          small, large, std = pick(lambda n: "SE" in n), pick(lambda n: n.endswith("Pro Max")), pick(lambda n: n.split()[-1].isdigit())
+          print("std=" + (std or large)["udid"])
+          print("all=" + " ".join("-destination id=" + d["udid"] for d in dict.fromkeys(x["udid"] for x in [small, std, large] if x) and [x for x in [small, std, large] if x]))
+          print("names=" + ", ".join(x["name"] for x in [small, std, large] if x))
+          PY
+          cat "$GITHUB_OUTPUT"
+      - name: Unit tests (TuulitTests)
+        timeout-minutes: 20
         working-directory: ios
         run: |
           set -o pipefail
-          DESTS=$(xcrun simctl list devices available -j | python3 -c '
-          import json, sys
-          devs = [d for r, ds in json.load(sys.stdin)["devices"].items() if "iOS" in r for d in ds if d["name"].startswith("iPhone")]
-          def pick(pred):
-              m = [d for d in devs if pred(d["name"])]
-              return m[-1]["udid"] if m else None
-          ids = [pick(lambda n: "SE" in n), pick(lambda n: n.endswith("Pro Max")), pick(lambda n: n.split()[-1].isdigit())]
-          print(" ".join("-destination id=" + i for i in dict.fromkeys(x for x in ids if x)))')
-          echo "Destinations: $DESTS"
-          xcodebuild test-without-building -project Tuulit.xcodeproj -scheme Tuulit $DESTS             -resultBundlePath TestResults CODE_SIGNING_ALLOWED=NO | tee xcodebuild.log | grep -E "error:|Test Case.*failed|Executed|TEST (SUCCEEDED|FAILED)|Testing failed"
+          xcrun simctl boot ${{ steps.sims.outputs.std }} || true
+          xcodebuild test-without-building -project Tuulit.xcodeproj -scheme Tuulit -only-testing:TuulitTests             -destination id=${{ steps.sims.outputs.std }} -test-timeouts-enabled YES -default-test-execution-time-allowance 120             -resultBundlePath UnitResults CODE_SIGNING_ALLOWED=NO 2>&1 | tee unit.log | grep -E "Test Case|error:|Executed|TEST (SUCCEEDED|FAILED)|Testing failed|Failing tests"
+      - name: UI tests on ${{ steps.sims.outputs.names }}
+        timeout-minutes: 45
+        working-directory: ios
+        run: |
+          set -o pipefail
+          xcodebuild test-without-building -project Tuulit.xcodeproj -scheme Tuulit -only-testing:TuulitUITests             ${{ steps.sims.outputs.all }} -test-timeouts-enabled YES -default-test-execution-time-allowance 180             -maximum-concurrent-test-simulator-destinations 1             -resultBundlePath UIResults CODE_SIGNING_ALLOWED=NO 2>&1 | tee ui.log | grep -E "Test Case|error:|Executed|TEST (SUCCEEDED|FAILED)|Testing failed|Failing tests"
       - name: Upload results
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: ios-test-results
           path: |
-            ios/TestResults.xcresult
-            ios/xcodebuild.log
+            ios/UnitResults.xcresult
+            ios/UIResults.xcresult
+            ios/unit.log
+            ios/ui.log
             ios/build.log
