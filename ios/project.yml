@@ -33,12 +33,8 @@ targets:
     type: application
     platform: iOS
     sources:
+      # Includes Resources/GoogleService-Info.plist automatically when it exists (it's gitignored).
       - path: Tuulit
-        excludes:
-          - "Resources/GoogleService-Info.plist"
-      - path: Tuulit/Resources/GoogleService-Info.plist
-        optional: true
-        buildPhase: resources
     dependencies:
       - package: TuulitCore
       - package: Firebase
