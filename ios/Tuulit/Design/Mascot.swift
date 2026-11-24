@@ -39,9 +39,8 @@ struct Mascot: View {
         static let wrap = "M51 58h18a5 5 0 0 1 0 10h-18a5 5 0 0 1 0-10z"
     }
 
-    var body: some View {
-        Canvas { ctx, sz in
-            let k = min(sz.width, sz.height) / 120
+    private func render(_ ctx: inout GraphicsContext, _ sz: CGSize) {
+            let k: CGFloat = min(sz.width, sz.height) / 120
             ctx.scaleBy(x: k, y: k)
             let outline = StrokeStyle(lineWidth: 2.6, lineCap: .round, lineJoin: .round)
             func shape(_ d: String, _ fill: Color) {
@@ -92,7 +91,10 @@ struct Mascot: View {
             if mood != .sleepy {
                 dot(53.5, 41.5, 3.4, MascotColors.blush); dot(68, 40.5, 3.4, MascotColors.blush)
             }
-        }
+    }
+
+    var body: some View {
+        Canvas { ctx, sz in render(&ctx, sz) }
         .frame(width: size, height: size)
         .accessibilityElement()
         .accessibilityLabel("Tuulit banana, \(mood.rawValue) mood")

@@ -503,10 +503,18 @@ struct MonthGrid: View {
         }
     }
 
+    private func fillColor(_ m: DayMarks, selectedDay: Bool) -> Color {
+        if m.period { return c.period }
+        if m.ovulation { return c.fertile }
+        if m.predicted { return c.periodSoft }
+        if m.fertile { return c.fertileSoft }
+        return selectedDay ? c.tan : .clear
+    }
+
     @ViewBuilder private func dayCell(_ day: Int) -> some View {
         let m = marks(day)
         let disabled = disableAfter.map { day > $0 } ?? false
-        let fill: Color = m.period ? c.period : m.ovulation ? c.fertile : m.predicted ? c.periodSoft : m.fertile ? c.fertileSoft : (selected == day ? c.tan : .clear)
+        let fill: Color = fillColor(m, selectedDay: selected == day)
         let number = Dates.civil(day).day
         ZStack {
             Circle().fill(fill)

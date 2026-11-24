@@ -129,6 +129,25 @@ private struct BananaCatch: View {
     @State private var game = BananaCatchModel()
     @State private var ended = false
 
+    private func render(_ ctx: inout GraphicsContext, _ sz: CGSize) {
+        for f in game.items {
+            let p = CGPoint(x: CGFloat(f.x) * sz.width, y: CGFloat(f.y) * sz.height)
+            if f.rock {
+                ctx.fill(Path(ellipseIn: CGRect(x: p.x - 17, y: p.y - 12, width: 34, height: 24)), with: .color(Color(hex: 0xB9ADA4)))
+                ctx.fill(Path(ellipseIn: CGRect(x: p.x - 9, y: p.y - 8, width: 10, height: 6)), with: .color(Color(hex: 0xD8CFC8)))
+            } else {
+                drawBanana(&ctx, at: p, scale: 1, outline: c.toffee.opacity(0.6), tip: c.toffee, fill: MascotColors.banana)
+            }
+        }
+        let bw: CGFloat = 96
+        let bx: CGFloat = CGFloat(game.basketX) * sz.width - bw / 2
+        let by: CGFloat = sz.height * 0.92
+        var bowl = ctx
+        bowl.clip(to: Path(CGRect(x: 0, y: by, width: sz.width, height: sz.height)))
+        bowl.fill(Path(ellipseIn: CGRect(x: bx + 4, y: by - 26, width: bw - 8, height: 52)), with: .color(c.toffee))
+        fillRound(&ctx, CGRect(x: bx, y: by - 2, width: bw, height: 9), 5, c.periodDeep)
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 4) {
@@ -137,27 +156,12 @@ private struct BananaCatch: View {
             .accessibilityElement().accessibilityLabel("\(game.lives) lives left")
             GeometryReader { g in
                 ZStack(alignment: .bottom) {
-                    Canvas { ctx, sz in
-                        for f in game.items {
-                            let p = CGPoint(x: f.x * sz.width, y: f.y * sz.height)
-                            if f.rock {
-                                ctx.fill(Path(ellipseIn: CGRect(x: p.x - 17, y: p.y - 12, width: 34, height: 24)), with: .color(Color(hex: 0xB9ADA4)))
-                                ctx.fill(Path(ellipseIn: CGRect(x: p.x - 9, y: p.y - 8, width: 10, height: 6)), with: .color(Color(hex: 0xD8CFC8)))
-                            } else {
-                                drawBanana(&ctx, at: p, scale: 1, outline: c.toffee.opacity(0.6), tip: c.toffee, fill: MascotColors.banana)
-                            }
-                        }
-                        let bw: CGFloat = 96, bx = game.basketX * sz.width - bw / 2, by = sz.height * 0.92
-                        var bowl = ctx
-                        bowl.clip(to: Path(CGRect(x: 0, y: by, width: sz.width, height: sz.height)))
-                        bowl.fill(Path(ellipseIn: CGRect(x: bx + 4, y: by - 26, width: bw - 8, height: 52)), with: .color(c.toffee))
-                        ctx.fill(Path(roundedRect: CGRect(x: bx, y: by - 2, width: bw, height: 9), cornerRadius: 5), with: .color(c.periodDeep))
-                    }
+                    Canvas { ctx, sz in render(&ctx, sz) }
                     T("Drag anywhere to move", .caption, c.inkFaint).padding(.bottom, 4)
                 }
                 .background(c.oat, in: RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
                 .contentShape(Rectangle())
-                .gesture(DragGesture(minimumDistance: 0).onChanged { v in game.basketX = min(max(v.location.x / g.size.width, 0.08), 0.92) })
+                .gesture(DragGesture(minimumDistance: 0).onChanged { v in game.basketX = min(max(Double(v.location.x / g.size.width), 0.08), 0.92) })
                 .accessibilityElement()
                 .accessibilityLabel("Game area. Bananas fall from the top; drag to move the basket.")
                 .accessibilityAdjustableAction { dir in

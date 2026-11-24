@@ -37,6 +37,13 @@ struct CycleView: View {
         }
     }
 
+    private func chipColor(_ part: String) -> Color {
+        if part.contains("period") || part.contains("flow") { return c.periodSoft }
+        if part.contains("fertile") || part.contains("ovulation") { return c.fertileSoft }
+        if part.contains("mood") { return c.peachSoft }
+        return c.sand
+    }
+
     private func dayDetail(_ snap: CycleSnapshot) -> some View {
         let p = snap.prediction
         var parts: [String] = []
@@ -60,9 +67,7 @@ struct CycleView: View {
                     FlowLayout(spacing: 6) {
                         ForEach(parts, id: \.self) { part in
                             T(part, .caption).padding(.horizontal, 10).padding(.vertical, 5)
-                                .background(part.contains("period") || part.contains("flow") ? c.periodSoft
-                                            : part.contains("fertile") || part.contains("ovulation") ? c.fertileSoft
-                                            : part.contains("mood") ? c.peachSoft : c.sand, in: Capsule())
+                                .background(chipColor(part), in: Capsule())
                         }
                     }
                     .padding(.top, 4)
