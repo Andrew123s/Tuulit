@@ -184,9 +184,3 @@ extension UINavigationController: @retroactive UIGestureRecognizerDelegate {
         viewControllers.count > 1
     }
 }
-
-/// Environment helper for pushed screens: pop back.
-struct BackAction {
-    let model: AppModel
-    func callAsFunction() { model.pop() }
-}

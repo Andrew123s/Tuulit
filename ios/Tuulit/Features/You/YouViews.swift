@@ -190,6 +190,9 @@ struct NotificationsView: View {
     @Environment(\.openURL) private var openURL
     @State private var allowed = true
 
+    static let checkInOptions: [Int] = [1080, 1200, 1290]
+    static let quietOptions: [(String, Int, Int)] = [("22:00–08:00", 1320, 480), ("23:00–07:00", 1380, 420), ("21:00–09:00", 1260, 540), ("Off", 0, 0)]
+
     private func hm(_ m: Int) -> String { String(format: "%02d:%02d", m / 60, m % 60) }
 
     var body: some View {
@@ -208,6 +211,13 @@ struct NotificationsView: View {
                 }
                 .padding(.top, 8)
             }
+            sections
+        }
+        .task { allowed = await model.reminders.isAllowed() }
+    }
+
+    @ViewBuilder private var sections: some View {
+        let s = model.settings
             Panel(padding: 16) {
                 T("Lock screen preview", .caption, c.inkMuted).padding(.bottom, 8)
                 HStack(alignment: .top, spacing: 10) {
@@ -221,27 +231,25 @@ struct NotificationsView: View {
             .padding(.top, 8)
             SettingRow(title: "Period coming up", sub: "\(s.periodLeadDays) days before · at check-in time", isOn: s.notifyPeriod) { on in enable { model.settingsStore.setNotifyPeriod(on, leadDays: s.periodLeadDays) } }
             if s.notifyPeriod {
-                FlowLayout { ForEach(1...3, id: \.self) { d in Chip("\(d) \(d == 1 ? "day" : "days") before", selected: s.periodLeadDays == d) { model.settingsStore.setNotifyPeriod(true, leadDays: d) } } }
+                FlowLayout { ForEach(1...3, id: \.self) { (d: Int) in Chip(d == 1 ? "1 day before" : "\(d) days before", selected: s.periodLeadDays == d) { model.settingsStore.setNotifyPeriod(true, leadDays: d) } } }
                     .padding(.vertical, 8)
             }
             SettingRow(title: "Evening check-in", sub: "\(hm(s.checkInMinuteOfDay)) · only if you haven't logged · skipped days are fine", isOn: s.notifyCheckIn) { on in
                 enable { model.settingsStore.setNotifyCheckIn(on, minuteOfDay: s.checkInMinuteOfDay) }
             }
             if s.notifyCheckIn {
-                FlowLayout { ForEach([18 * 60, 20 * 60, 21 * 60 + 30], id: \.self) { m in Chip(hm(m), selected: s.checkInMinuteOfDay == m) { model.settingsStore.setNotifyCheckIn(true, minuteOfDay: m) } } }
+                FlowLayout { ForEach(NotificationsView.checkInOptions, id: \.self) { m in Chip(hm(m), selected: s.checkInMinuteOfDay == m) { model.settingsStore.setNotifyCheckIn(true, minuteOfDay: m) } } }
                     .padding(.vertical, 8)
             }
             SettingRow(title: "Discreet notifications", sub: "No cycle words on the lock screen", isOn: s.discreetNotifications) { model.settingsStore.setDiscreet($0) }
             T("Quiet hours", .subtitle).padding(.top, 16).padding(.bottom, 8)
             FlowLayout {
-                ForEach([("22:00–08:00", 22 * 60, 8 * 60), ("23:00–07:00", 23 * 60, 7 * 60), ("21:00–09:00", 21 * 60, 9 * 60), ("Off", 0, 0)], id: \.0) { q in
+                ForEach(NotificationsView.quietOptions, id: \.0) { q in
                     Chip(q.0, selected: s.quietStartMinute == q.1 && s.quietEndMinute == q.2) { model.settingsStore.setQuietHours(q.1, q.2) }
                 }
             }
             T("Tuulit never sends streak or “you missed a day” alerts.", .caption, c.inkFaint).padding(.top, 16)
-        }
-        .task { allowed = await model.reminders.isAllowed() }
-    }
+            }
 
     private func enable(_ apply: @escaping () -> Void) {
         apply()

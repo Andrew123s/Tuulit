@@ -93,6 +93,7 @@ private struct LastPeriodStep: View {
 }
 
 private struct CycleBasicsStep: View {
+    static let options: [(CycleRegularity, String)] = [(.REGULAR, "Mostly regular"), (.SOMEWHAT_VARIABLE, "They vary"), (.IRREGULAR, "Unpredictable"), (.NOT_SURE, "Not sure")]
     @Binding var cycleLen: Int
     @Binding var periodLen: Int
     @Binding var regularity: CycleRegularity
@@ -120,7 +121,7 @@ private struct CycleBasicsStep: View {
                     Hairline().padding(.vertical, 20)
                     T("How regular are they?", .subtitle).padding(.bottom, 10)
                     FlowLayout {
-                        ForEach([(CycleRegularity.REGULAR, "Mostly regular"), (.SOMEWHAT_VARIABLE, "They vary"), (.IRREGULAR, "Unpredictable"), (.NOT_SURE, "Not sure")], id: \.0) { item in
+                        ForEach(CycleBasicsStep.options, id: \.0) { item in
                             Chip(item.1, selected: regularity == item.0) { regularity = item.0 }
                         }
                     }
