@@ -25,7 +25,7 @@ struct Mascot: View {
 
     init(_ mood: MascotMood, size: CGFloat = 64) { self.mood = mood; self.size = size }
 
-    private enum Body {
+    private enum Shape {
         static let backLeft = "M54 63C40 55 28 63 26 86c7 0 12-12 26-15z"
         static let backRight = "M66 63c12-9 24-6 27 7-7 0-12-4-25 1z"
         static let flesh = "M51 66C47 44 50 22 62 13c6-4 10 0 8 9-2 14-4 30-4 44z"
@@ -54,18 +54,18 @@ struct Mascot: View {
             func dot(_ x: CGFloat, _ y: CGFloat, _ r: CGFloat, _ color: Color = MascotColors.outline) {
                 ctx.fill(Path(ellipseIn: CGRect(x: x - r, y: y - r, width: r * 2, height: r * 2)), with: .color(color))
             }
-            shape(Body.backLeft, MascotColors.tan)
-            shape(Body.backRight, MascotColors.tan)
-            shape(Body.flesh, MascotColors.flesh)
+            shape(Shape.backLeft, MascotColors.tan)
+            shape(Shape.backRight, MascotColors.tan)
+            shape(Shape.flesh, MascotColors.flesh)
             dot(66.5, 13.5, 3)
-            shape(Body.body, MascotColors.banana)
-            shape(Body.stem, MascotColors.outline)
-            shape(Body.peelLeft, MascotColors.banana)
-            line(Body.crease1, 1.6)
-            shape(Body.peelRight, MascotColors.banana)
-            line(Body.crease2, 1.6)
-            if mood == .gym { shape(Body.headband, MascotColors.prop) }
-            if mood == .cramps { shape(Body.wrap, MascotColors.prop) }
+            shape(Shape.body, MascotColors.banana)
+            shape(Shape.stem, MascotColors.outline)
+            shape(Shape.peelLeft, MascotColors.banana)
+            line(Shape.crease1, 1.6)
+            shape(Shape.peelRight, MascotColors.banana)
+            line(Shape.crease2, 1.6)
+            if mood == .gym { shape(Shape.headband, MascotColors.prop) }
+            if mood == .cramps { shape(Shape.wrap, MascotColors.prop) }
             switch mood {
             case .warm, .gym:
                 let dy: CGFloat = mood == .gym ? 1 : 0
