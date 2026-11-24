@@ -1,0 +1,8 @@
+# Friendly aliases for the legal pages (stable URLs stay /privacy, /terms, /account-deletion).
+/privacy-policy     /privacy           301
+/privacy.html       /privacy           301
+/terms-of-service   /terms             301
+/tos                /terms             301
+/delete-account     /account-deletion  301
+/data-deletion      /account-deletion  301
+/support            /contact           301

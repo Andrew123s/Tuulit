@@ -1,0 +1,13 @@
+---
+import Base from "../layouts/Base.astro";
+---
+<Base title="Page not found" description="This page doesn't exist." path="/404" noindex>
+  <div class="wrap" style="text-align:center;padding-block:96px">
+    <img src="/mascot.svg" alt="" width="140" height="140" style="margin-inline:auto" />
+    <h1 style="font-size:clamp(2.2rem,5vw,3.4rem);margin-top:20px">This page went for a little rest.</h1>
+    <p class="lead" style="margin:16px auto 28px">It may have moved. Try the home page or one of these:</p>
+    <p style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+      <a class="btn btn-ink" href="/">Home</a><a class="btn btn-quiet" href="/privacy">Privacy Policy</a><a class="btn btn-quiet" href="/contact">Contact</a>
+    </p>
+  </div>
+</Base>

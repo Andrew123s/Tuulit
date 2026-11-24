@@ -22,7 +22,8 @@ const env = (over: Partial<Env> = {}): Env => ({
   RATE: { get: async () => null, put: async () => undefined } as unknown as KVNamespace,
   FIREBASE_PROJECT_ID: "tuulit-test", FIREBASE_PROJECT_NUMBER: "123", APP_CHECK_MODE: "off",
   AI_PROVIDER: "anthropic", AI_MODEL: "test", AI_DAILY_LIMIT: "60", BREVO_SENDER_EMAIL: "hello@example.com",
-  BREVO_SENDER_NAME: "Tuulit", APP_NAME: "Tuulit", PUBLIC_BASE_URL: "https://api.example.com",
+  BREVO_SENDER_NAME: "Tuulit",
+  CONTACT_TO: "support@example.com", APP_NAME: "Tuulit", PUBLIC_BASE_URL: "https://api.example.com",
   AI_API_KEY: "", BREVO_API_KEY: "", FIREBASE_SERVICE_ACCOUNT: "", MEDIA_SIGNING_KEY: "k".repeat(40), ...over,
 });
 
@@ -117,5 +118,27 @@ describe("push messages", () => {
     expect(ios.apns.payload.aps.alert).toEqual({ title: "Tuulit", body: "Take a quick moment for yourself." });
     expect(ios.apns.payload.aps["mutable-content"]).toBe(1);
     expect(JSON.stringify(ios.apns)).not.toContain("Cramps");
+  });
+});
+
+describe("contact form", () => {
+  it("validates input and flags spam without sending", async () => {
+    const { validateContact } = await import("../src/contact");
+    const ok = { name: "Maya", email: "maya@example.com", topic: "Feedback", message: "Love the banana!", startedAt: 1000 };
+    expect(validateContact(ok, 10_000).spam).toBe(false);
+    expect(validateContact({ ...ok, website: "http://spam" }, 10_000).spam).toBe(true);
+    expect(validateContact(ok, 2000).spam).toBe(true);
+    expect(() => validateContact({ ...ok, email: "nope" })).toThrow();
+    expect(() => validateContact({ ...ok, topic: "Other" })).toThrow();
+    expect(() => validateContact({ ...ok, message: "hi" })).toThrow();
+  });
+
+  it("rejects other origins and answers CORS preflight only for tuulit.app", async () => {
+    const { contact } = await import("../src/contact");
+    const env = { CONTACT_TO: "x@example.com" } as unknown as Env;
+    const pre = await contact(new Request("https://w/v1/contact", { method: "OPTIONS", headers: { origin: "https://tuulit.app" } }), env);
+    expect(pre.headers.get("access-control-allow-origin")).toBe("https://tuulit.app");
+    const bad = await contact(new Request("https://w/v1/contact", { method: "POST", headers: { origin: "https://evil.example" }, body: "{}" }), env);
+    expect(bad.status).toBe(403);
   });
 });

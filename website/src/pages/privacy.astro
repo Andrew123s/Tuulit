@@ -1,0 +1,181 @@
+---
+import LegalLayout from "../components/LegalLayout.astro";
+import { site } from "../data/site";
+const p = site.privacy;
+const toc = [
+  { id: "summary", label: "Summary" },
+  { id: "controller", label: "Who is responsible" },
+  { id: "on-device", label: "Data that stays on your phone" },
+  { id: "collected", label: "Data we process" },
+  { id: "health", label: "Health data and legal bases" },
+  { id: "ai", label: "Ask Tuulit (AI)" },
+  { id: "connect", label: "Tuulit Connect" },
+  { id: "providers", label: "Service providers" },
+  { id: "sharing", label: "When data is shared" },
+  { id: "retention", label: "How long we keep data" },
+  { id: "security", label: "How data is protected" },
+  { id: "rights", label: "Your choices and rights" },
+  { id: "deletion", label: "Deleting your data" },
+  { id: "children", label: "Age" },
+  { id: "changes", label: "Changes to this policy" },
+  { id: "contact", label: "Contact" },
+];
+---
+<LegalLayout
+  title="Privacy Policy"
+  description="How Tuulit handles your data: what stays on your phone, what is processed when you use optional features, which providers are involved, and how to delete your data."
+  path="/privacy"
+  intro="Tuulit handles some of the most personal information there is. This policy explains, in plain language, exactly what the app does with it."
+  meta={[`Version ${p.version}`, `Effective ${p.effective}`, `Last updated ${p.updated}`]}
+  toc={toc}
+>
+  <h2 id="summary">Summary</h2>
+  <div class="callout">
+    <ul>
+      <li><strong>Tuulit works without an account.</strong> Then your cycle, mood, symptom and journal records stay in an encrypted database on your phone, and we never receive them.</li>
+      <li><strong>Optional features send data only when you use them:</strong> account backup, Ask Tuulit, Tuulit Connect and voice-note backup.</li>
+      <li><strong>We don't sell your data, show ads, or use analytics or advertising trackers in the app.</strong></li>
+      <li><strong>You can export your data, delete it from your phone, and delete your account and cloud backup</strong> from inside the app at any time.</li>
+    </ul>
+  </div>
+  <p>This policy applies to the Tuulit app for Android (and the iPhone version when it is released) and to this website, tuulit.app.</p>
+
+  <h2 id="controller">Who is responsible</h2>
+  <p>Tuulit is operated by <strong>{site.company}</strong>, {site.country} ("we", "us"). We are the controller of the personal data described in this policy. You can reach us at <a href={`mailto:${site.email}`}>{site.email}</a>.</p>
+
+  <h2 id="on-device">Data that stays on your phone</h2>
+  <p>Everything you log is stored on your device first, in an encrypted database. On Android the database is encrypted with a key held in the Android Keystore; on iPhone it is protected by iOS Data Protection. The app excludes this data from the phone's automatic cloud backups.</p>
+  <p>On your phone, Tuulit stores:</p>
+  <ul>
+    <li><strong>Cycle records:</strong> period start and end dates, and predictions calculated on the device.</li>
+    <li><strong>Daily logs:</strong> flow, mood score and mood words, symptoms and their severity, energy, sleep quality, water, medication and movement notes, and your private journal notes.</li>
+    <li><strong>Pain journal entries:</strong> intensity, location, type, duration, relief tried, the activities affected, and notes.</li>
+    <li><strong>Voice notes</strong> you choose to record (audio files kept in the app's private storage).</li>
+    <li><strong>Your Comfort Library, survival kit, game scores and earned "moments".</strong></li>
+    <li><strong>Your Ask Tuulit conversation history.</strong> It is kept only on your phone and is never backed up to the cloud.</li>
+    <li><strong>Settings,</strong> such as your name, cycle defaults, reminder preferences and your app-lock PIN. The PIN is stored only as a salted hash, never as the PIN itself.</li>
+  </ul>
+  <p>Data that only ever exists on your phone is not sent to us. Uninstalling the app, or using <em>You → Privacy → Delete all data on this phone</em>, erases it.</p>
+
+  <h2 id="collected">Data we process when you use optional features</h2>
+  <table>
+    <thead><tr><th>Feature</th><th>Data</th><th>Why</th></tr></thead>
+    <tbody>
+      <tr><td>Account (optional)</td><td>Email address, a hashed password (held by Firebase Authentication), optional display name, account identifiers, sign-in timestamps</td><td>To create and secure your account and let you sign in on another phone, including across Android and iPhone</td></tr>
+      <tr><td>Cloud backup (automatic once you have an account)</td><td>Your cycle records, daily logs (including journal notes), pain journal entries, Comfort Library and kit items, game scores, moments, a reference to backed-up voice notes, and the settings that follow you between devices (name, cycle defaults, regularity, Banana Mode, custom moods and symptoms, SOS messages, sleep routine, and whether Ask may use your summary)</td><td>To restore your data on a new phone and keep your phones in sync</td></tr>
+      <tr><td>Emails</td><td>Email address and display name</td><td>To send the account emails you need: a welcome email, email verification, password reset and confirmation of account deletion. We don't send marketing emails.</td></tr>
+      <tr><td>Ask Tuulit</td><td>Your question, up to the last 12 messages of that conversation, your language setting and, only if you switch on "Personal answers", a short summary (see <a href="#ai">Ask Tuulit</a>)</td><td>To answer your question</td></tr>
+      <tr><td>Tuulit Connect</td><td>Names, invite codes, the connection and its permissions, and the status fields you allow (see <a href="#connect">Tuulit Connect</a>)</td><td>To share the updates you choose with the people you choose</td></tr>
+      <tr><td>Notifications</td><td>A push token for your device, the platform (Android or iOS) and when it was last updated</td><td>To deliver Connect messages such as an SOS or a reply. Period and check-in reminders are scheduled on your phone and need no server.</td></tr>
+      <tr><td>Voice-note backup (optional, per recording)</td><td>The audio file you choose to back up</td><td>To keep a private copy you can restore</td></tr>
+      <tr><td>App integrity</td><td>An attestation token from Google Play Integrity (Android) or Apple App Attest (iPhone)</td><td>To check that requests to our server come from the genuine app, which protects against abuse</td></tr>
+      <tr><td>Server logs and limits</td><td>Request metadata processed by our hosting provider; event types such as "question answered" or "account deleted", without the content; a daily usage counter linked to your account identifier</td><td>To run the service securely, limit abuse and fix problems</td></tr>
+      <tr><td>Contact form on this website</td><td>Your name, email address, topic and message. Your IP address is kept for about 26 hours in a counter that limits how many messages can be sent in a day.</td><td>To reply to you, and to prevent spam</td></tr>
+      <tr><td>Visiting this website</td><td>Technical data your browser sends (such as IP address, browser type and the page requested), processed by our host, Cloudflare. The website sets no cookies and uses no analytics.</td><td>To deliver the website securely</td></tr>
+    </tbody>
+  </table>
+  <p>We don't use the app to collect your location, contacts, photos, advertising identifiers or analytics. The app requests only these Android permissions: internet, notifications (for reminders and Connect), and microphone (only when you choose to record or dictate).</p>
+  <p><strong>Dictation.</strong> When you dictate a note, the speech is converted to text by your phone's speech recognition service. Tuulit asks for on-device recognition where the phone supports it; otherwise your phone's provider (Google on Android, Apple on iPhone) may process the audio under its own terms. The text goes into your note on the phone.</p>
+
+  <h2 id="health">Health data and our legal bases</h2>
+  <p>Menstrual, reproductive, mood and symptom information is health data, a special category of personal data under the EU General Data Protection Regulation (GDPR). We process it in the cloud only when you choose a feature that needs it, and on the basis of your <strong>explicit consent</strong> (Art. 9(2)(a) GDPR). You can withdraw consent at any time by deleting your account and backup, switching off "Personal answers in Ask", or disconnecting a trusted person. Withdrawing doesn't affect processing that happened before.</p>
+  <p>Our other legal bases are:</p>
+  <ul>
+    <li><strong>Performance of our agreement with you</strong> (Art. 6(1)(b) GDPR) for providing your account, backup, Connect and the features you request.</li>
+    <li><strong>Our legitimate interests</strong> (Art. 6(1)(f) GDPR) in keeping the service secure, preventing abuse (app integrity checks and usage limits) and answering enquiries.</li>
+    <li><strong>Legal obligations</strong> (Art. 6(1)(c) GDPR) where the law requires us to keep or disclose information.</li>
+  </ul>
+  <p>We never use your health data for advertising, and we never sell it.</p>
+
+  <h2 id="ai">Ask Tuulit (AI)</h2>
+  <p>Ask Tuulit needs an account. When you ask a question:</p>
+  <ul>
+    <li>The app sends your question, up to the previous 12 messages of that conversation and your language setting to our server (a Cloudflare Worker). The server passes them to our AI provider, currently <strong>Google's Gemini API</strong>, to generate an answer.</li>
+    <li>If you switch on <em>Personal answers in Ask</em> (off by default), the request also includes a short summary of your own logs: your current cycle day and phase, average cycle and period length, how much your cycles vary, your most-logged symptoms, and how many cycles had severe pain. It never includes your journal notes or the dates of individual entries.</li>
+    <li><strong>Appointment prep</strong> sends only the summary shown on screen, plus the concern you type, and only when you tap "Suggest questions".</li>
+    <li>Before sending, your phone checks your question for urgent warning signs and shows safety guidance. The server repeats this check.</li>
+    <li>Your conversation history is stored only on your phone. Our server doesn't keep the content of questions or answers; it logs only that an answer was given, the tool used, the urgency level and whether a summary was included.</li>
+  </ul>
+  <p>Answers are general information, not medical advice or a diagnosis.</p>
+
+  <h2 id="connect">Tuulit Connect</h2>
+  <p>Connect lets you share a small, controlled status with people you trust. Both people need an account.</p>
+  <ul>
+    <li>When you invite someone, we store a one-time code with your account identifier and display name. The code expires after 24 hours.</li>
+    <li>When they accept, we store the connection: both account identifiers and display names, the relationship they chose, and your sharing permissions. <strong>Every permission starts switched off.</strong></li>
+    <li>You decide what they can see, and only these things can ever be shared: that your period is coming soon (a heads-up two days before), that it has started (with the date), your current cycle phase, and a rough-day signal with a short message of up to 140 characters when you send an SOS.</li>
+    <li><strong>Your symptoms, moods, journal notes and pain entries are never shared through Connect.</strong></li>
+    <li>Switching a permission off removes it from their view. Either of you can disconnect at any time, which deletes the connection and the shared status.</li>
+    <li>Your trusted person can send you a short reply. A notification is sent to their phone or yours through our server and Firebase Cloud Messaging, containing the sender's name and the message.</li>
+  </ul>
+
+  <h2 id="providers">Service providers</h2>
+  <p>We use these providers to run Tuulit. They process data on our behalf and only for the purposes above.</p>
+  <table>
+    <thead><tr><th>Provider</th><th>Service</th><th>Data</th></tr></thead>
+    <tbody>
+      <tr><td>Google (Firebase)</td><td>Authentication, Cloud Firestore database (located in a European multi-region), Cloud Messaging, App Check</td><td>Account, backup, Connect, push tokens, integrity tokens</td></tr>
+      <tr><td>Google (Gemini API)</td><td>AI answers for Ask Tuulit</td><td>Questions, recent messages and the optional summary</td></tr>
+      <tr><td>Cloudflare</td><td>Our server (Workers), usage counters (KV), voice-note storage (R2), hosting of this website</td><td>Requests passing through our server, usage counters, backed-up voice notes, contact-form messages in transit</td></tr>
+      <tr><td>Brevo</td><td>Sending account emails and forwarding website enquiries to us</td><td>Email address, display name, email content</td></tr>
+    </tbody>
+  </table>
+  <p>Some of these providers are based in, or may process data in, countries outside the European Economic Area, including the United States. Where that happens, the transfer relies on the safeguards these providers offer for international transfers, such as the European Commission's Standard Contractual Clauses or certification under the EU–US Data Privacy Framework.</p>
+
+  <h2 id="sharing">When data is shared</h2>
+  <ul>
+    <li>With the service providers listed above, to run the service.</li>
+    <li>With the people you connect with, limited to what you switch on.</li>
+    <li>If the law requires it, for example in response to a valid legal request, and only as far as required.</li>
+  </ul>
+  <p>We don't sell personal data and don't share it for advertising.</p>
+
+  <h2 id="retention">How long we keep data</h2>
+  <ul>
+    <li><strong>On your phone:</strong> until you delete it, clear the app's data or uninstall the app.</li>
+    <li><strong>Account and cloud backup:</strong> for as long as you have an account. When you delete your account, your login, cloud backup, connections, shared status, invites and backed-up voice notes are deleted.</li>
+    <li><strong>Entries you delete</strong> while keeping your account are replaced in the backup by a "deleted" marker, so your other devices remove them too. The marker keeps only the date or identifier needed to sync, not the content, and it is removed when you delete your account. Deleted periods keep their start and end dates in the marker, because those dates are needed to sync correctly.</li>
+    <li><strong>Backed-up voice notes</strong> stay in storage until you delete your account, even if you clear the day they belong to.</li>
+    <li><strong>Usage counters</strong> for Ask expire automatically after about 26 hours.</li>
+    <li><strong>Invite codes</strong> stop working after 24 hours. They remain linked to your account until it is deleted.</li>
+    <li><strong>Server logs and email delivery records</strong> are kept by Cloudflare and Brevo according to their own limited retention periods.</li>
+    <li><strong>Website enquiries</strong> are kept in our support inbox for as long as needed to handle your request.</li>
+  </ul>
+
+  <h2 id="security">How data is protected</h2>
+  <ul>
+    <li>Encrypted on-device storage, as described above, and an optional app-lock PIN that is stored only as a salted hash.</li>
+    <li>Encrypted connections (HTTPS/TLS) between the app, our server and our providers.</li>
+    <li>Firestore security rules that let only your signed-in account read or write your backup. A trusted person can read only the status fields you allow.</li>
+    <li>No secret keys in the app: AI, email and storage credentials stay on our server.</li>
+    <li>Short-lived, signed links for voice-note uploads and downloads.</li>
+    <li>App integrity checks and per-account usage limits on our server.</li>
+    <li>Discreet notifications by default, so your lock screen shows no cycle words.</li>
+  </ul>
+  <p>No system is perfectly secure, but we work to protect your data and will notify you and the authorities of a personal data breach where the law requires it.</p>
+
+  <h2 id="rights">Your choices and rights</h2>
+  <p>In the app you can:</p>
+  <ul>
+    <li>use Tuulit without an account;</li>
+    <li>switch "Personal answers in Ask" on or off;</li>
+    <li>control each trusted person's permissions;</li>
+    <li>export your logs and pain entries as a CSV file;</li>
+    <li>delete all data on your phone;</li>
+    <li>delete your account and cloud backup.</li>
+  </ul>
+  <p>Under the GDPR you also have the right to access your data, correct it, delete it, restrict or object to its processing, receive it in a portable format, and withdraw consent. To use these rights, email <a href={`mailto:${site.email}`}>{site.email}</a>. We may need to confirm that the request comes from the account holder.</p>
+  <p>You also have the right to lodge a complaint with a data protection supervisory authority, in particular in the EU country where you live or work, or where an alleged infringement took place.</p>
+
+  <h2 id="deletion">Deleting your data</h2>
+  <p>You can delete your account from the app (<em>You → Account and backup → Delete account</em>) or ask us by email. The <a href="/account-deletion">Account and data deletion</a> page explains exactly what is deleted.</p>
+
+  <h2 id="children">Age</h2>
+  <p>Tuulit is intended for people aged 16 and over. If you believe a child under 16 has given us personal data, contact us and we will delete it.</p>
+
+  <h2 id="changes">Changes to this policy</h2>
+  <p>When our data practices change, we will update this page and its version and "last updated" date. For significant changes we will also tell you in the app, or by email if you have an account, before the change takes effect.</p>
+
+  <h2 id="contact">Contact</h2>
+  <p>{site.company}, {site.country}. Email: <a href={`mailto:${site.email}`}>{site.email}</a>. You can also use our <a href="/contact">contact page</a>.</p>
+</LegalLayout>

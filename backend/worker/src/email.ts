@@ -36,12 +36,12 @@ export const templates = {
   }),
 };
 
-export async function sendEmail(env: Env, to: string, t: { subject: string; html: string }): Promise<void> {
+export async function sendEmail(env: Env, to: string, t: { subject: string; html: string }, replyTo?: { email: string; name: string }): Promise<void> {
   if (!env.BREVO_API_KEY) throw new HttpError(503, "Email isn't configured on the server (BREVO_API_KEY missing).");
   const res = await fetch("https://api.brevo.com/v3/smtp/email", {
     method: "POST",
     headers: { "content-type": "application/json", accept: "application/json", "api-key": env.BREVO_API_KEY },
-    body: JSON.stringify({ sender: { email: env.BREVO_SENDER_EMAIL, name: env.BREVO_SENDER_NAME }, to: [{ email: to }], subject: t.subject, htmlContent: t.html, tags: ["transactional"] }),
+    body: JSON.stringify({ sender: { email: env.BREVO_SENDER_EMAIL, name: env.BREVO_SENDER_NAME }, to: [{ email: to }], subject: t.subject, htmlContent: t.html, tags: ["transactional"], ...(replyTo ? { replyTo } : {}) }),
   });
   if (!res.ok) {
     // Log status only: never log addresses or bodies.

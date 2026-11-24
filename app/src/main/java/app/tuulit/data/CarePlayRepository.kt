@@ -61,7 +61,7 @@ class CarePlayRepository(
 
     suspend fun deleteComfortItem(id: String) {
         val i = dao.comfortItem(id) ?: return
-        dao.upsertComfortItem(i.copy(deleted = true, updatedAt = now()))
+        dao.upsertComfortItem(i.copy(title = "", detail = "", deleted = true, updatedAt = now()))
         changes.onLocalChange()
     }
 

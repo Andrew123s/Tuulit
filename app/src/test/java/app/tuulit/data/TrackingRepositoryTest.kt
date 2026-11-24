@@ -80,6 +80,9 @@ class TrackingRepositoryTest {
         repo.saveDailyLog(DailyLog(100))
         assertNull(repo.dailyLog(100))
         assertTrue(repo.dailyLogs.first().isEmpty())
+        repo.saveDailyLog(DailyLog(100, journalText = "private"))
+        repo.deleteDailyLog(100)
+        assertEquals("", db.dao().dailyLog(100)!!.journalText) // tombstone keeps only the date
     }
 
     @Test fun editCycleValidates() = runTest {

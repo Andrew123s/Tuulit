@@ -42,7 +42,7 @@ class TrackingRepository(
             journalText = log.journalText.take(4000),
         )
         if (clean.isEmpty()) {
-            dao.dailyLog(log.epochDay)?.let { dao.upsertDailyLog(it.copy(deleted = true, updatedAt = now())) }
+            dao.dailyLog(log.epochDay)?.let { dao.upsertDailyLog(tombstone(it.epochDay)) }
         } else {
             dao.upsertDailyLog(DailyLogEntity.fromDomain(clean, now()))
         }
@@ -56,7 +56,7 @@ class TrackingRepository(
     suspend fun deleteDailyLog(day: Long) {
         val existing = dao.dailyLog(day) ?: return
         val hadFlow = FlowIntensity.fromName(existing.flow).level >= FlowIntensity.LIGHT.level
-        dao.upsertDailyLog(existing.copy(deleted = true, updatedAt = now()))
+        dao.upsertDailyLog(tombstone(day))
         if (hadFlow) reconcileFlowRemoved(day)
         changes.onLocalChange()
     }
@@ -119,9 +119,13 @@ class TrackingRepository(
 
     suspend fun deletePainLog(id: String) {
         val e = dao.painLog(id) ?: return
-        dao.upsertPainLog(e.copy(deleted = true, updatedAt = now()))
+        dao.upsertPainLog(e.copy(intensity = 0, location = "", painType = "", durationHours = 0, medicationTaken = "", impactedWorkOrStudy = false,
+            impactedExercise = false, impactedSleep = false, notes = "", deleted = true, updatedAt = now()))
         changes.onLocalChange()
     }
+
+    /** A deleted day keeps only its date, so no health content lingers in the backup. */
+    private fun tombstone(day: Long) = DailyLogEntity(epochDay = day, updatedAt = now(), deleted = true)
 
     // --- cycle reconciliation -------------------------------------------------------------
 

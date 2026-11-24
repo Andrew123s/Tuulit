@@ -56,6 +56,9 @@ final class TrackingRepositoryTests: XCTestCase {
         XCTAssertNil(repo.dailyLog(100))
         XCTAssertTrue(repo.dailyLogs.isEmpty)
         XCTAssertEqual(store.read { $0.day(100)?.deleted }, true)
+        repo.saveDailyLog(DailyLog(epochDay: 100, journalText: "private"))
+        repo.deleteDailyLog(100)
+        XCTAssertEqual(store.read { $0.day(100)?.journalText }, "", "tombstone keeps only the date")
     }
 
     func testEditCycleValidates() {

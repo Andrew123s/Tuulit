@@ -1,0 +1,100 @@
+---
+import LegalLayout from "../components/LegalLayout.astro";
+import { site } from "../data/site";
+const t = site.terms;
+const toc = [
+  { id: "intro", label: "Introduction" },
+  { id: "acceptance", label: "Accepting these terms" },
+  { id: "eligibility", label: "Eligibility" },
+  { id: "account", label: "Your account" },
+  { id: "use", label: "Permitted use" },
+  { id: "content", label: "Your content" },
+  { id: "features", label: "App features" },
+  { id: "health", label: "Health information" },
+  { id: "ai", label: "AI-generated information" },
+  { id: "third", label: "Third-party services" },
+  { id: "ip", label: "Intellectual property" },
+  { id: "suspension", label: "Suspension and termination" },
+  { id: "availability", label: "Service availability" },
+  { id: "liability", label: "Liability" },
+  { id: "changes", label: "Changes to these terms" },
+  { id: "contact", label: "Contact" },
+];
+---
+<LegalLayout
+  title="Terms of Service"
+  description="The terms for using the Tuulit menstrual health and wellness app and website."
+  path="/terms"
+  intro="These terms explain what you can expect from Tuulit and what we expect from you. Please read them together with our Privacy Policy."
+  meta={[`Version ${t.version}`, `Effective ${t.effective}`, `Last updated ${t.updated}`]}
+  toc={toc}
+>
+  <h2 id="intro">Introduction</h2>
+  <p>Tuulit is a menstrual health and wellness app operated by <strong>{site.company}</strong>, {site.country} ("we", "us"). These Terms of Service ("terms") apply to the Tuulit app and to tuulit.app.</p>
+
+  <div class="callout rose">
+    <p><strong>Tuulit is not a medical device and does not diagnose or treat any condition.</strong> Cycle predictions, insights and educational content are estimates and general information, not a substitute for professional medical advice. <strong>Cycle and fertile-window estimates must not be used as contraception.</strong> If you have severe pain, very heavy bleeding, fever, fainting, or thoughts of harming yourself, contact a clinician or emergency services.</p>
+  </div>
+
+  <h2 id="acceptance">Accepting these terms</h2>
+  <p>By using Tuulit you agree to these terms. If you don't agree, please don't use the app. Our <a href="/privacy">Privacy Policy</a> explains how we handle personal data.</p>
+
+  <h2 id="eligibility">Eligibility</h2>
+  <p>You must be at least 16 years old to use Tuulit.</p>
+
+  <h2 id="account">Your account</h2>
+  <p>You can use Tuulit without an account. Some features need one: cloud backup, use on more than one phone, Ask Tuulit and Tuulit Connect. If you create an account:</p>
+  <ul>
+    <li>give an email address you control, and keep your password secure;</li>
+    <li>you are responsible for activity on your account; tell us if you think someone else has accessed it;</li>
+    <li>you can delete your account at any time from the app, as described on the <a href="/account-deletion">account deletion</a> page.</li>
+  </ul>
+  <p>If you set an app-lock PIN, it can't be recovered. If you forget it, you'll need to clear the app's data on that phone.</p>
+
+  <h2 id="use">Permitted use</h2>
+  <p>You may use Tuulit for your own personal, non-commercial purposes. You agree not to:</p>
+  <ul>
+    <li>misuse the service, for example by interfering with its security, overloading our server, or bypassing usage limits or integrity checks;</li>
+    <li>use Connect to send messages that harass, threaten or harm another person, or connect with someone without their agreement;</li>
+    <li>use Ask Tuulit to generate unlawful or harmful content;</li>
+    <li>copy, reverse-engineer or resell the app, except where the law allows it.</li>
+  </ul>
+
+  <h2 id="content">Your content</h2>
+  <p>Everything you log, write or record in Tuulit stays yours. You give us permission to store and process it only as needed to provide the features you use, as described in the Privacy Policy. You are responsible for what you send to people you connect with.</p>
+
+  <h2 id="features">App features</h2>
+  <p>Tuulit includes cycle and symptom tracking, insights, guided care sessions, games and quizzes, Ask Tuulit, and Tuulit Connect. We may improve, change or retire features over time. Features may differ between Android and iPhone while the iPhone version is in development.</p>
+
+  <h2 id="health">Health information limitations</h2>
+  <ul>
+    <li>Predictions are calculated from what you log and are estimates. Bodies vary, and estimates can be wrong.</li>
+    <li>Insights describe patterns in your own logs. They are not a medical assessment.</li>
+    <li>Care sessions offer general comfort techniques. Stop if anything feels uncomfortable, and follow the advice of your healthcare professional.</li>
+    <li>Safety notices in the app point you to in-person care when your words match known warning signs. They can't detect every emergency.</li>
+  </ul>
+
+  <h2 id="ai">AI-generated information</h2>
+  <p>Ask Tuulit uses an AI model to write general, educational answers. AI answers can be incomplete or wrong and are not medical advice, diagnosis or treatment. Don't rely on them for decisions about your health. Check important information with a qualified professional. Ask Tuulit has a daily usage limit.</p>
+
+  <h2 id="third">Third-party services</h2>
+  <p>Tuulit relies on providers such as Google (Firebase, Gemini API), Cloudflare and Brevo, and is distributed through app stores such as Google Play. Their own terms may also apply when you use their services, for example the app store's terms when you download the app.</p>
+
+  <h2 id="ip">Intellectual property</h2>
+  <p>The Tuulit name, banana mascot, design, illustrations, text and software belong to {site.company} or its licensors. The app's fonts, Fraunces and Plus Jakarta Sans, are used under the SIL Open Font License 1.1. These terms give you no rights to our trademarks or branding.</p>
+
+  <h2 id="suspension">Suspension and termination</h2>
+  <p>You can stop using Tuulit at any time and delete your account in the app. We may suspend or close an account that seriously or repeatedly breaks these terms, or where the law requires it. Where reasonable, we will tell you why and give you the chance to export your data first.</p>
+
+  <h2 id="availability">Service availability</h2>
+  <p>The core tracking features work offline on your phone. Online features (backup, Ask, Connect, emails) depend on our server and providers, and may sometimes be unavailable. We aim to keep Tuulit running well but can't promise it will always be available or error-free.</p>
+
+  <h2 id="liability">Liability</h2>
+  <p>Tuulit is provided free of charge. Nothing in these terms excludes or limits liability that can't be excluded under applicable law, including liability for intent, gross negligence, or injury to life, body or health, or your rights under mandatory consumer protection law.</p>
+
+  <h2 id="changes">Changes to these terms</h2>
+  <p>If we change these terms, we will update this page with a new version and date. For significant changes we will tell you in the app, or by email if you have an account, before they take effect.</p>
+
+  <h2 id="contact">Contact</h2>
+  <p>{site.company}, {site.country}. Email: <a href={`mailto:${site.email}`}>{site.email}</a>.</p>
+</LegalLayout>

@@ -1,0 +1,62 @@
+---
+import LegalLayout from "../components/LegalLayout.astro";
+import { site } from "../data/site";
+const toc = [
+  { id: "in-app", label: "Delete in the app" },
+  { id: "email", label: "Ask us by email" },
+  { id: "what", label: "What is deleted" },
+  { id: "phone", label: "Data on your phone" },
+  { id: "shared", label: "Shared information" },
+  { id: "kept", label: "What may remain" },
+];
+const subject = encodeURIComponent("Delete my Tuulit account");
+const body = encodeURIComponent("Please delete my Tuulit account and associated data.\n\nThe email address on my Tuulit account is: ");
+---
+<LegalLayout
+  title="Account and data deletion"
+  description="How to delete your Tuulit account and personal data, from the app or by email, and exactly what is deleted."
+  path="/account-deletion"
+  intro="You can delete your Tuulit account and its data at any time, from inside the app or by asking us. This page explains both ways and exactly what happens."
+  meta={["Applies to Tuulit for Android and iPhone", `Operated by ${site.company}`]}
+  toc={toc}
+>
+  <h2 id="in-app">Delete your account in the app</h2>
+  <ol>
+    <li>Open Tuulit and tap your avatar (top right on Today) to open <strong>You</strong>.</li>
+    <li>Tap <strong>Account and backup</strong>.</li>
+    <li>Tap <strong>Delete account</strong>.</li>
+    <li>Enter your password to confirm it's you, then tap <strong>Delete</strong>.</li>
+  </ol>
+  <p>The deletion happens straight away. You'll also receive a confirmation email.</p>
+
+  <h2 id="email">Ask us by email</h2>
+  <p>If you can't open the app, for example because you no longer have the phone, email <a href={`mailto:${site.email}?subject=${subject}&body=${body}`}>{site.email}</a> with the subject "Delete my Tuulit account", from the email address you used for your account. We may ask you to confirm the request from that address before we delete anything. We'll confirm once the deletion is complete.</p>
+
+  <h2 id="what">What is deleted</h2>
+  <p>Deleting your account removes:</p>
+  <ul>
+    <li>your login (email address, password and profile) from Firebase Authentication;</li>
+    <li>your cloud backup: cycle records, daily logs including journal notes, pain journal entries, Comfort Library and kit, game scores, moments and synced settings;</li>
+    <li>your registered devices for notifications;</li>
+    <li>your voice notes backed up to our storage;</li>
+    <li>your Tuulit Connect connections, the status you shared, and invite codes you created.</li>
+  </ul>
+  <p>Deletion is permanent and can't be undone.</p>
+
+  <h2 id="phone">Data on your phone</h2>
+  <p>Deleting your account in the app also erases Tuulit's data on that phone. If you also used Tuulit on another phone, open the app there and use <em>You → Privacy → Delete all data on this phone</em>, or uninstall the app.</p>
+  <p>If you never created an account, your data exists only on your phone. Delete it with <em>You → Privacy → Delete all data on this phone</em>, or by uninstalling the app. We never received it, so there is nothing for us to delete.</p>
+  <div class="callout lilac"><p>Want a copy first? <em>Cycle → Insights → Export</em> or <em>You → Privacy → Export my data</em> saves your logs and pain entries as a CSV file.</p></div>
+
+  <h2 id="shared">Shared information</h2>
+  <p>When you delete your account, everything shared through Connect is removed, so your trusted people no longer see any status from you. Messages they already received as notifications on their own phones are outside our control.</p>
+
+  <h2 id="kept">What may remain</h2>
+  <ul>
+    <li><strong>Your Ask Tuulit history</strong> is stored only on your phone and is erased with the app's data, as described above.</li>
+    <li><strong>Email delivery records and server logs</strong> held by our providers (Brevo and Cloudflare) are kept only for their limited retention periods. Server logs don't contain your health data.</li>
+    <li><strong>If you emailed us,</strong> that correspondence stays in our support inbox for as long as needed to handle your request.</li>
+    <li><strong>Information we must keep by law</strong> is kept only as long as the law requires.</li>
+  </ul>
+  <p>Questions? See the <a href="/privacy">Privacy Policy</a> or <a href="/contact">contact us</a>.</p>
+</LegalLayout>

@@ -30,7 +30,7 @@ public final class TrackingRepository: @unchecked Sendable {
             clean.waterGlasses = log.waterGlasses.clamped(0, 30)
             clean.journalText = log.journalText.take(4000)
             if clean.isEmpty {
-                if var existing = d.day(log.epochDay) { existing.deleted = true; existing.updatedAt = now(); d.upsertDay(existing) }
+                if d.day(log.epochDay) != nil { d.upsertDay(DayRow(epochDay: log.epochDay, updatedAt: now(), deleted: true)) }
             } else {
                 d.upsertDay(DayRow.from(clean, now: now()))
             }
@@ -44,10 +44,10 @@ public final class TrackingRepository: @unchecked Sendable {
 
     public func deleteDailyLog(_ day: Int) {
         let changed: Bool = store.write { d in
-            guard var existing = d.day(day) else { return false }
+            guard let existing = d.day(day) else { return false }
             let hadFlow = FlowIntensity.fromName(existing.flow).level >= FlowIntensity.LIGHT.level
-            existing.deleted = true; existing.updatedAt = now()
-            d.upsertDay(existing)
+            // A deleted day keeps only its date, so no health content lingers in the backup.
+            d.upsertDay(DayRow(epochDay: day, updatedAt: now(), deleted: true))
             if hadFlow { reconcileFlowRemoved(&d, day: day) }
             return true
         }
@@ -126,6 +126,8 @@ public final class TrackingRepository: @unchecked Sendable {
     public func deletePainLog(id: String) {
         let changed: Bool = store.write { d in
             guard var e = d.pain[id] else { return false }
+            e.intensity = 0; e.location = ""; e.painType = ""; e.durationHours = 0; e.medicationTaken = ""; e.notes = ""
+            e.impactedWorkOrStudy = false; e.impactedExercise = false; e.impactedSleep = false
             e.deleted = true; e.updatedAt = now()
             d.pain[id] = e
             return true
@@ -265,7 +267,7 @@ public final class CarePlayRepository: @unchecked Sendable {
     public func deleteComfortItem(id: String) {
         let changed: Bool = store.write { d in
             guard var i = d.comfort[id] else { return false }
-            i.deleted = true; i.updatedAt = now(); d.comfort[id] = i
+            i.title = ""; i.detail = ""; i.deleted = true; i.updatedAt = now(); d.comfort[id] = i
             return true
         }
         if changed { onChange() }

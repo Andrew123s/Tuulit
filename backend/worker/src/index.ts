@@ -1,4 +1,5 @@
 import { answer, sanitize } from "./ai";
+import { contact } from "./contact";
 import { removeAllConnections } from "./connect";
 import { notify } from "./connect";
 import { sendEmail, templates } from "./email";
@@ -43,6 +44,7 @@ export async function route(req: Request, env: Env): Promise<Response> {
   const path = url.pathname;
   if (path === "/health") return json({ ok: true });
   if (path === "/v1/media/blob") return blob(env, req);
+  if (path === "/v1/contact") return contact(req, env);
   if (req.method !== "POST") throw new HttpError(405, "Method not allowed.");
 
   const claims = await authenticate(req, env);

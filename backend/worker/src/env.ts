@@ -14,6 +14,7 @@ export interface Env {
   AI_DAILY_LIMIT: string;
   BREVO_SENDER_EMAIL: string;
   BREVO_SENDER_NAME: string;
+  CONTACT_TO: string; // support inbox that receives website contact-form messages
   APP_NAME: string;
   PUBLIC_BASE_URL: string; // this Worker's public URL, used to build signed media URLs
 

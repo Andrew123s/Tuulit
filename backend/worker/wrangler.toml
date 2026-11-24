@@ -19,6 +19,7 @@ AI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai"
 AI_DAILY_LIMIT = "60"               # questions per user per day
 BREVO_SENDER_EMAIL = "hello@tuulit.app"
 BREVO_SENDER_NAME = "Tuulit"
+CONTACT_TO = "ycomspacegh@gmail.com"     # website contact form recipient
 APP_NAME = "Tuulit"
 PUBLIC_BASE_URL = "https://tuulit-api.mybeatstar.workers.dev"
 

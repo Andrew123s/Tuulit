@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="Tuulit banana mascot">
+  <g stroke="#3A2A24" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M54 63C40 55 28 63 26 86c7 0 12-12 26-15z" fill="#F2CFA8"/>
+    <path d="M66 63c12-9 24-6 27 7-7 0-12-4-25 1z" fill="#F2CFA8"/>
+    <path d="M51 66C47 44 50 22 62 13c6-4 10 0 8 9-2 14-4 30-4 44z" fill="#FFFBF3"/>
+    <path d="M49 65c-1 22 13 38 37 41l4-7c-17-6-24-18-24-34z" fill="#F7C948"/>
+    <path d="M86 99l5 1.5-2 7-5-1.5z" fill="#3A2A24"/>
+    <path d="M57 64c-14 0-22 14-17 32 7 1 9-13 18-22z" fill="#F7C948"/>
+    <path d="M62 64c12-6 25 0 26 16-7 1-9-8-23-8z" fill="#F7C948"/>
+  </g>
+  <circle cx="66.5" cy="13.5" r="3" fill="#3A2A24"/>
+  <g stroke="#3A2A24" stroke-width="1.6" stroke-linecap="round" fill="none">
+    <path d="M45 76c-1 5-1 9 0 13"/><path d="M72 66c4 0 8 2 10 6"/>
+  </g>
+  <g stroke="#3A2A24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <path d="M54.6 38q2.4-3 4.8 0M62 37q2.4-3 4.8 0"/>
+  </g>
+  <path d="M56.5 42q4.5 5 9 0" fill="#E2725B" stroke="#3A2A24" stroke-width="2" stroke-linejoin="round"/>
+  <circle cx="53.5" cy="41.5" r="3.4" fill="#F49A8C" fill-opacity=".4"/>
+  <circle cx="68" cy="40.5" r="3.4" fill="#F49A8C" fill-opacity=".4"/>
+  <path d="M26 18v10M21 23h10" stroke="#F7C948" stroke-width="2.6" stroke-linecap="round"/>
+</svg>

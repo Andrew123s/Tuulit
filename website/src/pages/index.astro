@@ -1,0 +1,203 @@
+---
+import Base from "../layouts/Base.astro";
+import { site } from "../data/site";
+
+const features = [
+  { id: "cycle", tint: "var(--coral-soft)", kicker: "Cycle tracking", title: "Know where you are in your cycle", body: "Log your period in a tap. Tuulit learns from your own cycles to estimate your next period, your phase and a likely fertile window, and widens the range honestly when your cycles vary.", shot: "/screens/calendar.webp", alt: "Tuulit calendar showing period days, predicted days and the fertile window estimate" },
+  { id: "log", tint: "var(--lilac-soft)", kicker: "Mood and symptoms", title: "Log how you really feel", body: "Mood faces, your own mood words, fifteen symptoms with three levels of severity, energy, sleep, water, medication and a private note, by typing or by voice.", shot: "/screens/log.webp", alt: "Tuulit log sheet with flow, mood and symptom tiles" },
+  { id: "care", tint: "var(--peach-soft)", kicker: "Tuulit Care", title: "Comfort when you need it", body: "Guided sessions for cramps, calm, sleep and low moods, a comfort library that remembers what helped you, and a period survival kit checklist.", shot: "/screens/care.webp", alt: "Tuulit Care with a breathing session and comfort categories" },
+  { id: "play", tint: "var(--banana-soft)", kicker: "Tuulit Play", title: "Two minutes of not thinking about it", body: "Eight gentle games and four quizzes. Personal bests only: no streaks, no guilt, nothing to keep up with.", shot: "/screens/play.webp", alt: "Tuulit Play with Banana Catch and the game collection" },
+  { id: "ask", tint: "var(--lilac-soft)", kicker: "Ask Tuulit", title: "Clear, kind answers about your body", body: "Explain my cycle, myth or fact, help preparing for a doctor's appointment. General information, never a diagnosis, with urgent warning signs flagged first.", shot: "/screens/ask.webp", alt: "Ask Tuulit with shortcut questions" },
+];
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "MobileApplication",
+  name: "Tuulit",
+  operatingSystem: "Android",
+  applicationCategory: "HealthApplication",
+  description: site.description,
+  url: site.url,
+  publisher: { "@type": "Organization", name: site.company, email: site.email },
+  offers: { "@type": "Offer", price: "0", priceCurrency: "EUR" },
+};
+---
+<Base title="Tuulit · Your cycle. Your comfort. Your Tuulit." description={site.description} path="/" jsonLd={jsonLd}>
+  <section class="hero">
+    <div class="wrap hero-grid">
+      <div class="hero-copy">
+        <p class="overline">Menstrual health &amp; wellness</p>
+        <h1>Your cycle.<br />Your comfort.<br /><span class="accent">Your Tuulit.</span></h1>
+        <p class="lead">More than a period tracker. Tuulit helps you understand your cycle, care for yourself, discover new ways to feel better and make every phase a little easier.</p>
+        <div class="hero-cta">
+          {site.googlePlayUrl
+            ? <a class="btn btn-banana" href={site.googlePlayUrl}>Get it on Google Play</a>
+            : <span class="btn btn-banana" aria-disabled="true">Coming soon to Google Play</span>}
+          <a class="btn btn-quiet" href="#privacy">How we protect your data</a>
+        </div>
+        <p class="small muted">Free · Android first · iPhone version in development</p>
+      </div>
+      <div class="hero-art" aria-hidden="true">
+        <svg class="blob b1" viewBox="0 0 200 200"><path fill="#FFE7DA" d="M44.7,-58.9C56.6,-49.3,64,-33.8,68.1,-17.2C72.2,-0.6,73.1,17.2,65.3,30.2C57.5,43.2,41,51.4,24.2,58.4C7.4,65.3,-9.7,71,-26.6,67.2C-43.5,63.4,-60.2,50.1,-68.4,33C-76.6,15.8,-76.3,-5.2,-68.8,-22.1C-61.3,-39,-46.6,-51.7,-31.2,-60.4C-15.8,-69.1,0.3,-73.8,15.3,-71C30.4,-68.2,32.9,-68.5,44.7,-58.9Z" transform="translate(100 100)"/></svg>
+        <svg class="blob b2" viewBox="0 0 200 200"><path fill="#FFF0C2" d="M38.5,-49.8C50.6,-41.7,61.3,-29.9,64.6,-16.2C67.9,-2.5,63.8,13.1,55.7,25.2C47.6,37.3,35.5,45.9,21.5,53.2C7.5,60.5,-8.4,66.5,-24.2,63.9C-40,61.3,-55.7,50.1,-63.6,34.7C-71.5,19.3,-71.6,-0.3,-64.6,-16.2C-57.6,-32.1,-43.5,-44.3,-29,-51.7C-14.5,-59.1,0.4,-61.7,14.1,-59.3C27.8,-56.9,26.4,-57.9,38.5,-49.8Z" transform="translate(100 100)"/></svg>
+        <div class="phone p-back"><img src="/screens/care.webp" alt="" width="540" height="1138" loading="eager" /></div>
+        <div class="phone p-front"><img src="/screens/today.webp" alt="" width="540" height="1138" fetchpriority="high" /></div>
+        <img class="hero-mascot" src="/mascot.svg" alt="" width="160" height="160" />
+      </div>
+    </div>
+  </section>
+
+  <section id="about" class="about">
+    <div class="wrap about-grid">
+      <div class="reveal">
+        <p class="overline">Why Tuulit</p>
+        <h2>Period apps predict dates. Your body asks for more.</h2>
+      </div>
+      <div class="reveal about-copy">
+        <p class="lead" style="max-width:none">Cramps, a low mood, a sleepless night, a question you'd rather not search. Tuulit brings cycle tracking, comfort, gentle distraction and clear information together, so the hard days feel a little lighter and the good days feel like yours.</p>
+        <ul class="pillars">
+          <li><strong>Understand</strong> your cycle with estimates that are honest about uncertainty.</li>
+          <li><strong>Care</strong> for yourself with guided comfort that remembers what helps you.</li>
+          <li><strong>Breathe</strong> with games and quizzes made for two minutes off.</li>
+          <li><strong>Choose</strong> exactly what, if anything, you share and with whom.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section id="features" class="features">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <p class="overline">Inside the app</p>
+        <h2>Everything for every phase</h2>
+        <p class="lead">Real screens from the Tuulit Android app.</p>
+      </div>
+      <div class="feature-list">
+        {features.map((f, i) => (
+          <article class={`feature reveal ${i % 2 ? "flip" : ""}`} id={f.id} style={`--tint:${f.tint}`}>
+            <div class="feature-copy">
+              <p class="overline">{f.kicker}</p>
+              <h3>{f.title}</h3>
+              <p class="muted">{f.body}</p>
+            </div>
+            <div class="feature-shot">
+              <div class="phone"><img src={f.shot} alt={f.alt} width="540" height="1138" loading="lazy" decoding="async" /></div>
+            </div>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section id="care" class="duo">
+    <div class="wrap duo-grid">
+      <article class="card insights reveal">
+        <p class="overline">Personal insights</p>
+        <h3>Patterns from your own logs</h3>
+        <p class="muted">Cycle lengths, your Cycle Mood Map, most-logged symptoms, a pain journal that notices when severe pain keeps returning, and a summary you can export as a CSV or take to an appointment.</p>
+        <p class="note">Insights describe your logs. They aren't a diagnosis.</p>
+      </article>
+      <article class="card connect reveal">
+        <p class="overline">Tuulit Connect</p>
+        <h3>Let someone in, on your terms</h3>
+        <p class="muted">Invite a partner, friend or family member with a one-time code. They see only what you switch on: a heads-up before your period, that it started, your phase, or a rough-day signal. Never your symptoms, moods or notes. Disconnect any time.</p>
+        <p class="note">Connect needs a free account for both of you.</p>
+      </article>
+    </div>
+  </section>
+
+  <section id="privacy" class="privacy-band">
+    <div class="wrap privacy-grid">
+      <div class="reveal">
+        <img src="/mascot.svg" alt="" width="120" height="120" />
+        <h2>Your data stays on your phone.</h2>
+        <p class="lead" style="margin-top:16px">Tuulit works fully without an account. Your logs live in an encrypted database on your device, and nothing leaves it unless you choose to back up, ask a question or share with someone.</p>
+      </div>
+      <ul class="promises reveal">
+        <li><strong>No ads, no tracking SDKs.</strong> We don't use analytics or advertising trackers in the app.</li>
+        <li><strong>Optional backup.</strong> With an account, your backup is stored in Google Firebase in Europe, protected so that only your signed-in account can read it from the app.</li>
+        <li><strong>Discreet by default.</strong> Notifications show no cycle words on your lock screen.</li>
+        <li><strong>You're in control.</strong> Export your data, delete it from your phone, or delete your account and backup from inside the app.</li>
+      </ul>
+      <p class="reveal privacy-links"><a href="/privacy">Read the Privacy Policy</a> · <a href="/account-deletion">How to delete your account</a></p>
+    </div>
+  </section>
+
+  <section class="philosophy">
+    <div class="wrap philo reveal">
+      <p class="overline">The Tuulit way</p>
+      <h2>Menstrual wellness is more than dates and predictions.</h2>
+      <p class="lead" style="margin-inline:auto">It's how you sleep, what helps your cramps, who you can tell, and being kind to yourself on the days that ask a lot. Tuulit is built to be warm, honest and on your side, with no streaks to keep and nothing to prove.</p>
+      <div class="hero-cta" style="justify-content:center">
+        {site.googlePlayUrl
+          ? <a class="btn btn-banana" href={site.googlePlayUrl}>Get Tuulit</a>
+          : <span class="btn btn-banana" aria-disabled="true">Coming soon to Google Play</span>}
+        <a class="btn btn-quiet" href="/contact">Get in touch</a>
+      </div>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .hero { padding-block: clamp(32px, 6vw, 72px) clamp(56px, 8vw, 96px); overflow: hidden; }
+  .hero-grid { display: grid; grid-template-columns: 1.05fr 1fr; gap: clamp(24px, 5vw, 64px); align-items: center; }
+  .hero h1 { margin-top: 14px; }
+  .accent { color: var(--coral-deep); font-style: italic; font-variation-settings: "opsz" 96; }
+  .hero .lead { margin-top: 22px; }
+  .hero-cta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 30px; }
+  .small { font-size: 0.92rem; margin-top: 16px; }
+  .hero-art { position: relative; min-height: 600px; }
+  .blob { position: absolute; }
+  .b1 { width: 560px; top: -20px; right: -80px; }
+  .b2 { width: 280px; bottom: 10px; left: -10px; }
+  .p-front { position: absolute; width: 260px; left: 8%; top: 30px; transform: rotate(-4deg); z-index: 2; }
+  .p-back { position: absolute; width: 236px; right: 2%; top: 92px; transform: rotate(6deg); opacity: .96; }
+  .hero-mascot { position: absolute; width: 150px; left: 52%; bottom: -6px; z-index: 3; animation: bob 5s ease-in-out infinite; }
+  @keyframes bob { 50% { transform: translateY(-10px) rotate(-3deg); } }
+  @media (max-width: 900px) {
+    .hero-grid { grid-template-columns: 1fr; }
+    .hero-art { min-height: 520px; }
+    .p-front { left: 6%; width: 220px; }
+    .p-back { right: 4%; width: 200px; }
+    .b1 { width: 440px; right: -120px; }
+  }
+  @media (max-width: 480px) { .hero-art { min-height: 440px; } .p-front { width: 190px; left: 0; } .p-back { width: 170px; right: 0; top: 70px; } .hero-mascot { width: 110px; left: 50%; } }
+
+  .about { background: var(--oat); }
+  .about-grid { display: grid; grid-template-columns: 1fr 1.2fr; gap: clamp(24px, 6vw, 80px); align-items: start; }
+  .about h2 { margin-top: 14px; }
+  .pillars { list-style: none; padding: 0; margin: 28px 0 0; display: grid; gap: 14px; }
+  .pillars li { padding: 16px 20px; background: var(--cream); border-radius: var(--r-md); border-left: 4px solid var(--banana); }
+  @media (max-width: 860px) { .about-grid { grid-template-columns: 1fr; } }
+
+  .feature-list { display: grid; gap: clamp(40px, 6vw, 72px); }
+  .feature { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(24px, 5vw, 64px); align-items: center; padding: clamp(24px, 4vw, 48px); border-radius: var(--r-xl); background: var(--tint); }
+  .feature.flip .feature-copy { order: 2; }
+  .feature h3 { font-size: clamp(1.7rem, 3vw, 2.4rem); margin: 10px 0 14px; line-height: 1.1; font-variation-settings: "opsz" 48; }
+  .feature-shot { display: flex; justify-content: center; }
+  .feature-shot .phone { max-width: 270px; transform: rotate(-2deg); }
+  .feature.flip .feature-shot .phone { transform: rotate(2deg); }
+  @media (max-width: 760px) { .feature { grid-template-columns: 1fr; } .feature.flip .feature-copy { order: 0; } .feature-shot .phone { max-width: 230px; } }
+
+  .duo { padding-top: 0; }
+  .duo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .card { padding: clamp(24px, 4vw, 40px); border-radius: var(--r-xl); }
+  .card h3 { font-size: clamp(1.6rem, 2.6vw, 2.1rem); margin: 10px 0 14px; }
+  .insights { background: var(--rose-soft); }
+  .connect { background: var(--sand); }
+  .note { margin-top: 16px; font-size: 0.9rem; color: var(--ink-faint); }
+  @media (max-width: 760px) { .duo-grid { grid-template-columns: 1fr; } }
+
+  .privacy-band { background: var(--ink); color: #f3e9df; border-radius: var(--r-xl); width: min(100% - 2 * var(--gutter), 1240px); margin-inline: auto; }
+  .privacy-band h2 { color: #fff8f0; margin-top: 20px; }
+  .privacy-band .lead { color: #d8c8bb; }
+  .privacy-grid { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(24px, 6vw, 72px); align-items: center; }
+  .promises { list-style: none; padding: 0; margin: 0; display: grid; gap: 14px; }
+  .promises li { background: rgba(255, 255, 255, 0.06); padding: 18px 20px; border-radius: var(--r-md); }
+  .promises strong { color: var(--banana); }
+  .privacy-links { grid-column: 1 / -1; }
+  .privacy-links a { color: var(--banana); font-weight: 700; }
+  @media (max-width: 860px) { .privacy-grid { grid-template-columns: 1fr; } }
+
+  .philo { text-align: center; max-width: 820px; }
+  .philo h2 { margin: 14px 0 18px; }
+</style>

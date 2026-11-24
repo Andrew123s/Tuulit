@@ -1,0 +1,125 @@
+---
+import "../styles/global.css";
+import { site } from "../data/site";
+
+interface Props {
+  title: string;
+  description: string;
+  path: string;
+  noindex?: boolean;
+  jsonLd?: Record<string, unknown>;
+}
+const { title, description, path, noindex = false, jsonLd } = Astro.props;
+const canonical = new URL(path, site.url).toString().replace(/\/$/, path === "/" ? "/" : "");
+const fullTitle = path === "/" ? title : `${title} · Tuulit`;
+const nav = [
+  { href: "/#features", label: "Features" },
+  { href: "/#care", label: "Care & Play" },
+  { href: "/#privacy", label: "Privacy" },
+  { href: "/contact", label: "Contact" },
+];
+const year = new Date().getFullYear();
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    {noindex && <meta name="robots" content="noindex" />}
+    <meta name="theme-color" content="#FFF8F0" />
+    <link rel="icon" type="image/svg+xml" href="/mascot.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="preload" href="/fonts/fraunces.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/jakarta.woff2" as="font" type="font/woff2" crossorigin />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Tuulit" />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={`${site.url}/og.png`} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Tuulit: Your cycle. Your comfort. Your Tuulit." />
+    <meta name="twitter:card" content="summary_large_image" />
+    {jsonLd && <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />}
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to content</a>
+    <header class="site-header" id="top">
+      <nav class="wrap nav" aria-label="Main">
+        <a class="brand" href="/" aria-label="Tuulit home"><img src="/mascot.svg" alt="" width="40" height="40" />Tuulit</a>
+        <button class="menu-btn" aria-expanded="false" aria-controls="nav-links" aria-label="Open menu"><span></span><span></span><span></span></button>
+        <ul class="nav-links" id="nav-links">
+          {nav.map((n) => <li><a href={n.href} aria-current={path === n.href ? "page" : undefined}>{n.label}</a></li>)}
+        </ul>
+      </nav>
+    </header>
+    <main id="main">
+      <slot />
+    </main>
+    <footer class="site-footer">
+      <div class="wrap">
+        <div class="footer-grid">
+          <div>
+            <a class="brand" href="/" style="color:#fff3e6"><img src="/mascot.svg" alt="" width="40" height="40" />Tuulit</a>
+            <p style="margin-top:14px;max-width:34ch">A menstrual health and wellness companion. General information, never a diagnosis.</p>
+            <p style="margin-top:14px">
+              {site.googlePlayUrl ? <a href={site.googlePlayUrl}>Get it on Google Play</a> : <span>Coming soon to Google Play</span>}
+            </p>
+          </div>
+          <div>
+            <h2>Tuulit</h2>
+            <ul>
+              <li><a href="/#about">About</a></li>
+              <li><a href="/#features">Features</a></li>
+              <li><a href="/contact">Contact</a></li>
+            </ul>
+          </div>
+          <div>
+            <h2>Legal</h2>
+            <ul>
+              <li><a href="/privacy">Privacy Policy</a></li>
+              <li><a href="/terms">Terms of Service</a></li>
+              <li><a href="/account-deletion">Account and data deletion</a></li>
+            </ul>
+          </div>
+          <div>
+            <h2>Support</h2>
+            <ul>
+              <li><a href={`mailto:${site.email}`}>{site.email}</a></li>
+              <li><a href="/contact">Send a message</a></li>
+            </ul>
+          </div>
+        </div>
+        <div class="footer-bottom">
+          <span>© {year} {site.company}. Tuulit is operated by {site.company}, {site.country}.</span>
+          <span>Cycle estimates are not contraception.</span>
+        </div>
+      </div>
+    </footer>
+    <script>
+      const header = document.querySelector(".site-header");
+      const btn = document.querySelector<HTMLButtonElement>(".menu-btn");
+      const links = document.getElementById("nav-links");
+      btn?.addEventListener("click", () => {
+        const open = links?.classList.toggle("open") ?? false;
+        btn.setAttribute("aria-expanded", String(open));
+        btn.setAttribute("aria-label", open ? "Close menu" : "Open menu");
+      });
+      links?.addEventListener("click", (e) => {
+        if ((e.target as HTMLElement).tagName === "A") { links.classList.remove("open"); btn?.setAttribute("aria-expanded", "false"); }
+      });
+      const onScroll = () => header?.classList.toggle("scrolled", window.scrollY > 8);
+      onScroll();
+      window.addEventListener("scroll", onScroll, { passive: true });
+      const io = "IntersectionObserver" in window ? new IntersectionObserver((entries) => {
+        for (const e of entries) if (e.isIntersecting) { e.target.classList.add("in"); io?.unobserve(e.target); }
+      }, { rootMargin: "0px 0px -8% 0px" }) : null;
+      document.querySelectorAll(".reveal").forEach((el) => (io ? io.observe(el) : el.classList.add("in")));
+    </script>
+  </body>
+</html>
