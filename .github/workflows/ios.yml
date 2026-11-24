@@ -26,8 +26,10 @@ jobs:
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
-      - name: Xcode
-        run: sudo xcode-select -s /Applications/Xcode_16.app || true
+      - name: Xcode and simulators
+        run: |
+          xcodebuild -version
+          xcrun simctl list runtimes
       - name: TuulitCore tests (macOS)
         working-directory: ios/Packages/TuulitCore
         run: swift test
@@ -36,17 +38,26 @@ jobs:
         run: |
           brew install xcodegen
           xcodegen generate
-      - name: Build and test (iPhone SE, iPhone 16, iPhone 16 Pro Max)
+      - name: Build
         working-directory: ios
         run: |
           set -o pipefail
-          xcodebuild test \
-            -project Tuulit.xcodeproj -scheme Tuulit \
-            -destination 'platform=iOS Simulator,name=iPhone SE (3rd generation)' \
-            -destination 'platform=iOS Simulator,name=iPhone 16' \
-            -destination 'platform=iOS Simulator,name=iPhone 16 Pro Max' \
-            -resultBundlePath TestResults \
-            CODE_SIGNING_ALLOWED=NO | tee xcodebuild.log
+          xcodebuild build-for-testing -project Tuulit.xcodeproj -scheme Tuulit             -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO | tee build.log | grep -E "error:|warning: unre|BUILD" || true
+          grep -q "TEST BUILD SUCCEEDED" build.log
+      - name: Test on small, standard and large iPhones
+        working-directory: ios
+        run: |
+          set -o pipefail
+          DESTS=$(xcrun simctl list devices available -j | python3 -c '
+          import json, sys
+          devs = [d for r, ds in json.load(sys.stdin)["devices"].items() if "iOS" in r for d in ds if d["name"].startswith("iPhone")]
+          def pick(pred):
+              m = [d for d in devs if pred(d["name"])]
+              return m[-1]["udid"] if m else None
+          ids = [pick(lambda n: "SE" in n), pick(lambda n: n.endswith("Pro Max")), pick(lambda n: n.split()[-1].isdigit())]
+          print(" ".join("-destination id=" + i for i in dict.fromkeys(x for x in ids if x)))')
+          echo "Destinations: $DESTS"
+          xcodebuild test-without-building -project Tuulit.xcodeproj -scheme Tuulit $DESTS             -resultBundlePath TestResults CODE_SIGNING_ALLOWED=NO | tee xcodebuild.log | grep -E "error:|Test Case.*failed|Executed|TEST (SUCCEEDED|FAILED)|Testing failed"
       - name: Upload results
         if: always()
         uses: actions/upload-artifact@v4
@@ -55,3 +66,4 @@ jobs:
           path: |
             ios/TestResults.xcresult
             ios/xcodebuild.log
+            ios/build.log
