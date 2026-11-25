@@ -34,7 +34,8 @@ Menstrual and reproductive health data is highly sensitive. These are the contro
 
 ## Secrets checklist before pushing to GitHub
 
-- `app/google-services.json`, `local.properties`, `.env*`, keystores, `node_modules/` and `.wrangler/` are git-ignored.
+- `app/google-services.json`, `local.properties`, `.env*`, keystores (`*.jks`, `*.keystore`), `keystore.properties`, `node_modules/` and `.wrangler/` are git-ignored.
+- Release signing: copy `keystore.properties.example` to `keystore.properties` at the repo root and fill in the passwords; `app/upload-keystore.jks` is the upload key. CI can use `TUULIT_KEYSTORE_*` environment variables instead. Back up the `.jks` and its passwords somewhere safe outside the repo: losing them means asking Google for an upload-key reset.
 - Search before committing:
   ```
   git grep -nE "AIza|sk-|xkeysib|BEGIN PRIVATE KEY"

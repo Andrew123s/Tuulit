@@ -11,6 +11,8 @@ Root causes and design are in `docs/AUTH_AND_SESSION.md`.
 - **Email verification** uses Firebase's built-in email only. The Brevo verification route was removed.
 - Clearer error messages for offline, timeout, expired sign-in, unconfirmed email, busy or unavailable Ask, and unexpected replies.
 - Ask skips failed exchanges in the history it sends, so the model answers the latest question.
+- Release signing reads `keystore.properties` (git-ignored, see `keystore.properties.example`) before the `TUULIT_KEYSTORE_*` environment variables.
+- tuulit.app is authenticated in Brevo (DKIM `brevo1`/`brevo2` and DMARC records confirmed in public DNS).
 
 ### Fixed
 - Ask failed for every question: the Worker's `AI_API_KEY` secret held a single Ctrl+V character. Answers were also cut off by Gemini's thinking tokens.

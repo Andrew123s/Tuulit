@@ -33,16 +33,24 @@ android {
     buildConfigField("String", "TUULIT_PRIVACY_URL", "\"${setting("TUULIT_PRIVACY_URL", "https://tuulit.app/privacy")}\"")
   }
 
-  // Release signing reads its keystore from environment variables so no secret lives in the repo.
+  // Release signing reads keystore.properties at the repo root (git-ignored) or, failing that,
+  // TUULIT_KEYSTORE_* environment variables, so no secret lives in the repo.
   // Debug builds use the standard Android debug keystore.
+  val keystoreProps = Properties().apply {
+    val f = rootProject.file("keystore.properties")
+    if (f.exists()) f.inputStream().use { load(it) }
+  }
+  fun signing(prop: String, env: String): String? =
+    keystoreProps.getProperty(prop)?.trim()?.takeIf { it.isNotEmpty() } ?: System.getenv(env)
+  val releaseStoreFile = signing("storeFile", "TUULIT_KEYSTORE_PATH")
+
   signingConfigs {
     create("release") {
-      val keystorePath = System.getenv("TUULIT_KEYSTORE_PATH")
-      if (keystorePath != null) {
-        storeFile = file(keystorePath)
-        storePassword = System.getenv("TUULIT_STORE_PASSWORD")
-        keyAlias = System.getenv("TUULIT_KEY_ALIAS") ?: "upload"
-        keyPassword = System.getenv("TUULIT_KEY_PASSWORD")
+      if (releaseStoreFile != null) {
+        storeFile = file(releaseStoreFile)
+        storePassword = signing("storePassword", "TUULIT_STORE_PASSWORD")
+        keyAlias = signing("keyAlias", "TUULIT_KEY_ALIAS") ?: "upload"
+        keyPassword = signing("keyPassword", "TUULIT_KEY_PASSWORD")
       }
     }
   }
@@ -52,7 +60,7 @@ android {
       isMinifyEnabled = true
       isShrinkResources = true
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-      if (System.getenv("TUULIT_KEYSTORE_PATH") != null) {
+      if (releaseStoreFile != null) {
         signingConfig = signingConfigs.getByName("release")
       }
     }
