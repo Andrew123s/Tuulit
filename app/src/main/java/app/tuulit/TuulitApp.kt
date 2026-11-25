@@ -93,15 +93,76 @@ class AppContainer(context: Context) {
         appScope.launch {
             prefs.settings.map { it.syncedSettingsUpdatedAt }.distinctUntilChanged().drop(1).collect { scheduleSync() }
         }
-        // On sign-in: restore and merge the cloud backup, then register this device for Connect pushes.
+        // Every change of account or verification state goes through onAuthChanged (one at a time).
         appScope.launch {
-            auth.state.map { (it as? AuthState.SignedIn)?.uid }.distinctUntilChanged().collect { uid ->
-                if (uid != null) {
-                    sync.sync(fullPull = true)
-                    runCatching { firebase.messaging?.token?.await()?.let { connect.registerDevice(it) } }
-                }
-            }
+            auth.state.map { st -> (st as? AuthState.SignedIn)?.let { it.uid to it.emailVerified } }
+                .distinctUntilChanged()
+                .collect { onAuthChanged(it?.first, it?.second == true) }
         }
+    }
+
+    /** Where the signed-in, verified account is in getting ready to use the app. */
+    sealed interface Session {
+        /** Not signed in, not verified yet, or still deciding. */
+        object Idle : Session
+        /** First sign-in on this phone: restoring the cloud backup before showing the app. */
+        object Restoring : Session
+        object Ready : Session
+        data class Failed(val message: String) : Session
+    }
+
+    val session = kotlinx.coroutines.flow.MutableStateFlow<Session>(Session.Idle)
+
+    /**
+     * Keeps local data isolated per account. The phone's data belongs to one Firebase uid (stored in prefs).
+     * - Data from before accounts were required has no owner and is adopted by the first verified account.
+     * - When a different verified account signs in, the previous account's local data is erased first.
+     * - Unverified accounts never claim or see data: they stay on the verify-email screen.
+     */
+    private suspend fun onAuthChanged(uid: String?, verified: Boolean) {
+        if (uid == null || !verified) { session.value = Session.Idle; return }
+        val owner = prefs.sessionUid()
+        if (owner.isNotEmpty() && owner != uid) account.wipeUserData()
+        prefs.setSessionUid(uid)
+        carePlay.seedLibraryIfEmpty()
+        if (owner == uid && prefs.current().onboardingCompleted) {
+            // Returning user on this phone: open straight away and merge the cloud copy in the background.
+            session.value = Session.Ready
+            sync.sync(fullPull = true)
+        } else {
+            restore()
+        }
+        runCatching { firebase.messaging?.token?.await()?.let { connect.registerDevice(it) } }
+    }
+
+    /** Pulls the cloud backup. A returning account with data in the cloud skips onboarding. */
+    suspend fun restore() {
+        session.value = Session.Restoring
+        when (val r = sync.sync(fullPull = true)) {
+            is app.tuulit.data.remote.SyncResult.Done -> {
+                if (r.cloudHadData) prefs.markOnboarded()
+                session.value = Session.Ready
+            }
+            is app.tuulit.data.remote.SyncResult.Failed -> session.value = Session.Failed(r.message)
+            app.tuulit.data.remote.SyncResult.Skipped -> session.value = Session.Ready
+        }
+    }
+
+    fun retryRestore() { appScope.launch { restore() } }
+
+    /** Lets the person use the app without the restore (offline); the next sync merges the backup in. */
+    fun continueWithoutRestore() { session.value = Session.Ready }
+
+    /** Full sign-out: back up, unregister push, sign out, erase this account's data from the phone. */
+    suspend fun signOut(force: Boolean = false): app.tuulit.data.SignOutResult {
+        syncJob?.cancel()
+        val r = account.signOut(force) { connect.unregisterDevice(it) }
+        if (r is app.tuulit.data.SignOutResult.Done) {
+            unlocked.value = false
+            session.value = Session.Idle
+            carePlay.seedLibraryIfEmpty()
+        }
+        return r
     }
 
     /** Keeps each trusted person's shared status in step with the latest prediction (permitted fields only). */
@@ -120,11 +181,13 @@ class AppContainer(context: Context) {
     /** Full pull + push, used when the app returns to the foreground while signed in. */
     fun syncOnForeground() {
         if (auth.currentUid == null) return
+        // Picks up a confirmed email or a disabled/deleted account when the app comes back.
+        if (!auth.isVerified) { appScope.launch { runCatching { auth.refresh() } }; return }
         appScope.launch { sync.sync(fullPull = true) }
     }
 
     fun scheduleSync() {
-        if (auth.currentUid == null) return
+        if (auth.currentUid == null || !auth.isVerified || session.value != Session.Ready) return
         syncJob?.cancel()
         syncJob = appScope.launch {
             delay(4_000)

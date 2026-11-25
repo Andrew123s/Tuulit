@@ -17,9 +17,30 @@ import java.util.concurrent.TimeUnit
 sealed class ApiError(message: String) : Exception(message) {
     object NotConfigured : ApiError("Tuulit's server isn't set up in this build yet (TUULIT_API_BASE_URL is missing).")
     object NotSignedIn : ApiError("Sign in to use this.")
-    object Offline : ApiError("You're offline. Your logs are safe on this phone.")
+    object SessionExpired : ApiError("Your sign-in has expired. Please sign in again.")
+    object EmailUnverified : ApiError("Confirm your email address to use this. Check your inbox for the link.")
+    object Offline : ApiError("You're offline. Check your connection and try again. Your logs are safe on this phone.")
+    object Timeout : ApiError("That took too long to answer. Check your connection and try again.")
     object RateLimited : ApiError("That's a lot of questions in a short time. Try again in a little while.")
+    object InvalidResponse : ApiError("We got an unexpected reply from our server. Please try again.")
+    /** The answer service (or another provider) is down or busy; [message] comes from the server. */
+    class Unavailable(message: String) : ApiError(message)
     class Server(message: String) : ApiError(message)
+
+    companion object {
+        /** Maps an HTTP status and the Worker's {error, code} body to an error with readable copy. */
+        fun fromResponse(status: Int, body: JSONObject): ApiError {
+            val msg = body.optString("error")
+            return when {
+                status == 401 -> SessionExpired
+                status == 403 && body.optString("code") == "email_unverified" -> EmailUnverified
+                status == 429 -> if (msg.isNotEmpty()) Server(msg) else RateLimited
+                status == 503 || status == 502 -> Unavailable(msg.ifEmpty { "The answer service is temporarily unavailable. Please try again shortly." })
+                status == 504 -> Unavailable(msg.ifEmpty { Timeout.message!! })
+                else -> Server(msg.ifEmpty { "Something went wrong on our side ($status). Please try again." })
+            }
+        }
+    }
 }
 
 /** Supplies the Firebase ID token and App Check token for each request. */
@@ -54,17 +75,17 @@ class ApiClient(
         tokens.appCheckToken()?.let { builder.header("X-Firebase-AppCheck", it) }
         val response = try {
             http.newCall(builder.build()).execute()
+        } catch (e: java.net.SocketTimeoutException) {
+            throw ApiError.Timeout
         } catch (e: IOException) {
             throw ApiError.Offline
         }
         response.use { r ->
-            val text = r.body?.string().orEmpty()
-            val json = runCatching { JSONObject(text) }.getOrElse { JSONObject() }
+            val text = try { r.body?.string().orEmpty() } catch (e: java.net.SocketTimeoutException) { throw ApiError.Timeout }
+            val json = runCatching { JSONObject(text) }.getOrNull()
             when {
-                r.isSuccessful -> json
-                r.code == 401 || r.code == 403 -> throw ApiError.NotSignedIn
-                r.code == 429 -> throw ApiError.RateLimited
-                else -> throw ApiError.Server(json.optString("error").ifEmpty { "Something went wrong on our side (${r.code}). Please try again." })
+                r.isSuccessful -> json ?: throw ApiError.InvalidResponse
+                else -> throw ApiError.fromResponse(r.code, json ?: JSONObject())
             }
         }
     }

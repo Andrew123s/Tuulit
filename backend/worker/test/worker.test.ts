@@ -101,7 +101,7 @@ describe("email templates", () => {
     expect(w.html).not.toContain("<script>");
     expect(w.html).toContain("&lt;script&gt;");
     expect(layout("T", "<p>x</p>", { label: "Go", url: "https://x.test/?a=1&b=2" })).toContain("a=1&amp;b=2");
-    for (const t of [templates.welcome("A"), templates.verify("https://x"), templates.deleted()]) {
+    for (const t of [templates.welcome("A"), templates.deleted()]) {
       expect(t.html.toLowerCase()).not.toMatch(/period|cycle day|symptom|ovulat/);
     }
   });

@@ -56,27 +56,27 @@ import kotlinx.coroutines.launch
 import java.time.YearMonth
 
 /**
- * Three-step onboarding from the approved design: welcome, last period, cycle basics, then
- * privacy and reminders. Signing in is optional and offered on the welcome screen.
+ * Three-step onboarding from the approved design: last period, cycle basics, then privacy and reminders.
+ * It runs after sign-in and email confirmation; the welcome screen now lives in front of sign-in (see [Welcome]).
  */
 @Composable
-fun OnboardingFlow(onSignIn: () -> Unit) {
-    var step by rememberSaveable { mutableIntStateOf(0) }
+fun OnboardingFlow() {
+    var step by rememberSaveable { mutableIntStateOf(1) }
     var lastStart by rememberSaveable { mutableStateOf<Long?>(null) }
     var cycleLen by rememberSaveable { mutableIntStateOf(28) }
     var periodLen by rememberSaveable { mutableIntStateOf(5) }
     var regularity by rememberSaveable { mutableStateOf(CycleRegularity.REGULAR) }
     when (step) {
-        0 -> Welcome(onStart = { step = 1 }, onSignIn = onSignIn)
-        1 -> LastPeriod(lastStart, onPick = { lastStart = it }, onBack = { step = 0 }, onNext = { step = 2 }, onSkip = { lastStart = null; step = 2 })
+        1 -> LastPeriod(lastStart, onPick = { lastStart = it }, onBack = null, onNext = { step = 2 }, onSkip = { lastStart = null; step = 2 })
         2 -> CycleBasics(cycleLen, periodLen, regularity, { cycleLen = it }, { periodLen = it }, { regularity = it },
             onBack = { step = 1 }, onNext = { step = 3 })
         else -> PrivacyStep(onBack = { step = 2 }, lastStart = lastStart, cycleLen = cycleLen, periodLen = periodLen, regularity = regularity)
     }
 }
 
+/** First screen for anyone who isn't signed in: the approved welcome, leading to create account or sign in. */
 @Composable
-private fun Welcome(onStart: () -> Unit, onSignIn: () -> Unit) = FixedScreen {
+fun Welcome(onStart: () -> Unit, onSignIn: () -> Unit) = FixedScreen {
     Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
         app.tuulit.ui.designsystem.Blob(Tuulit.colors.peachSoft, Modifier.size(280.dp), seed = 2)
         app.tuulit.ui.designsystem.Blob(Tuulit.colors.bananaSoft, Modifier.size(150.dp).offset(x = 90.dp, y = (-90).dp), seed = 4)
@@ -84,21 +84,21 @@ private fun Welcome(onStart: () -> Unit, onSignIn: () -> Unit) = FixedScreen {
     }
     T("Your cycle, understood. Your hard days, handled.", Tuulit.type.display)
     T("Tracking, comfort and honest answers, kept private on your phone.", Tuulit.type.body, Tuulit.colors.inkMuted, Modifier.padding(top = 12.dp, bottom = 28.dp))
-    TButton("Get started", onStart, Modifier.fillMaxWidth())
+    TButton("Create an account", onStart, Modifier.fillMaxWidth())
     TButton("I already have an account", onSignIn, Modifier.fillMaxWidth().padding(top = 8.dp), kind = ButtonKind.TEXT)
 }
 
 @Composable
-private fun StepBar(done: Int, onBack: () -> Unit, onSkip: (() -> Unit)?) {
+private fun StepBar(done: Int, onBack: (() -> Unit)?, onSkip: (() -> Unit)?) {
     Row(Modifier.fillMaxWidth().padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-        IconBtn(TuulitIcons.Back, "Back", onBack)
+        if (onBack != null) IconBtn(TuulitIcons.Back, "Back", onBack) else Spacer(Modifier.width(44.dp))
         Progress(3, done, Modifier.weight(1f).padding(horizontal = 12.dp))
         if (onSkip != null) TButton("Skip", onSkip, kind = ButtonKind.TEXT) else Spacer(Modifier.width(44.dp))
     }
 }
 
 @Composable
-private fun LastPeriod(selected: Long?, onPick: (Long) -> Unit, onBack: () -> Unit, onNext: () -> Unit, onSkip: () -> Unit) = FixedScreen {
+private fun LastPeriod(selected: Long?, onPick: (Long) -> Unit, onBack: (() -> Unit)?, onNext: () -> Unit, onSkip: () -> Unit) = FixedScreen {
     val today = Dates.today()
     var month by remember { mutableStateOf(YearMonth.now(Dates.clock)) }
     StepBar(1, onBack, onSkip)

@@ -98,11 +98,11 @@ fun AuthScreen(startMode: AuthMode, onDone: () -> Unit, onClose: () -> Unit) {
         AppBar(onBack = onClose, closeIcon = true)
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
             Mascot(if (mode == AuthMode.REGISTER) MascotMood.HAPPY else MascotMood.WARM, 72.dp, Modifier.padding(top = 4.dp))
-            T(when (mode) { AuthMode.SIGN_IN -> "Welcome back"; AuthMode.REGISTER -> "Back up your data"; AuthMode.FORGOT -> "Reset your password" },
+            T(when (mode) { AuthMode.SIGN_IN -> "Welcome back"; AuthMode.REGISTER -> "Create your account"; AuthMode.FORGOT -> "Reset your password" },
                 Tuulit.type.headline, modifier = Modifier.padding(top = 12.dp))
             T(when (mode) {
-                AuthMode.SIGN_IN -> "Sign in to restore your backup, use Ask and connect with your person."
-                AuthMode.REGISTER -> "An account lets you restore Tuulit on a new phone, use Ask and Connect. It's optional: Tuulit works fully without one."
+                AuthMode.SIGN_IN -> "Sign in to pick up where you left off."
+                AuthMode.REGISTER -> "Your account keeps your logs backed up, lets you restore Tuulit on a new phone and unlocks Ask and Connect."
                 AuthMode.FORGOT -> "Enter your email and we'll send a link to choose a new password."
             }, Tuulit.type.bodySm, Tuulit.colors.inkMuted, Modifier.padding(top = 8.dp, bottom = 20.dp))
             if (!c.firebase.isConfigured) Notice("Accounts aren't available yet", app.tuulit.data.remote.Firebase.notConfiguredMessage, Modifier.padding(bottom = 16.dp))
@@ -133,6 +133,97 @@ fun AuthScreen(startMode: AuthMode, onDone: () -> Unit, onClose: () -> Unit) {
             AuthMode.REGISTER -> TButton("Sign in instead", { mode = AuthMode.SIGN_IN; error = null }, Modifier.fillMaxWidth().padding(top = 4.dp), kind = ButtonKind.TEXT)
             AuthMode.FORGOT -> TButton("Back to sign in", { mode = AuthMode.SIGN_IN; error = null }, Modifier.fillMaxWidth().padding(top = 4.dp), kind = ButtonKind.TEXT)
         }
+    }
+}
+
+/**
+ * Full-screen gate for a signed-in account whose email isn't confirmed. It never loops: the person can
+ * resend (with a cooldown), re-check, or sign out and use another account. It re-checks every 10 seconds
+ * while visible and whenever the app returns to the foreground (for example after tapping the link).
+ */
+@Composable
+fun VerifyEmailScreen(email: String) {
+    val c = container()
+    val scope = rememberCoroutineScope()
+    var checking by remember { mutableStateOf(false) }
+    var sending by remember { mutableStateOf(false) }
+    var cooldown by remember { mutableStateOf(0) }
+    var message by remember { mutableStateOf<String?>(null) }
+    var error by remember { mutableStateOf<String?>(null) }
+    val owner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+
+    suspend fun check(manual: Boolean) {
+        val st = runCatching { c.auth.refresh() }.getOrNull()
+        if (manual && (st as? AuthState.SignedIn)?.emailVerified != true) {
+            error = if (st == null) "We couldn't check right now. Check your connection and try again."
+                    else "Not confirmed yet. Open the link in the email, then tap this again."
+            message = null
+        }
+    }
+    LaunchedEffect(email) { while (true) { delay(10_000); check(false) } }
+    LaunchedEffect(cooldown) { if (cooldown > 0) { delay(1_000); cooldown-- } }
+    androidx.compose.runtime.DisposableEffect(owner) {
+        val obs = androidx.lifecycle.LifecycleEventObserver { _, e -> if (e == androidx.lifecycle.Lifecycle.Event.ON_RESUME) scope.launch { check(false) } }
+        owner.lifecycle.addObserver(obs)
+        onDispose { owner.lifecycle.removeObserver(obs) }
+    }
+
+    FixedScreen {
+        Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
+            Mascot(MascotMood.WARM, 72.dp, Modifier.padding(top = 24.dp))
+            T("Confirm your email", Tuulit.type.headline, modifier = Modifier.padding(top = 12.dp))
+            T("We sent a confirmation link to", Tuulit.type.bodySm, Tuulit.colors.inkMuted, Modifier.padding(top = 8.dp))
+            T(email, Tuulit.type.subtitle, modifier = Modifier.padding(top = 2.dp, bottom = 16.dp))
+            Notice("Can't find it?", "Open the email on any device and tap the link, then come back here. " +
+                "Check your spam and promotions folders, and search for \"Tuulit\". It can take a few minutes to arrive.")
+            message?.let { Notice("Email sent", it, Modifier.padding(top = 12.dp)) }
+            error?.let { Notice("Not yet", it, Modifier.padding(top = 12.dp), kind = NoticeKind.MEDICAL) }
+        }
+        TButton("I've confirmed my email", {
+            checking = true
+            scope.launch { check(true); checking = false }
+        }, Modifier.fillMaxWidth(), loading = checking)
+        TButton(if (cooldown > 0) "Send the email again (${cooldown}s)" else "Send the email again", {
+            sending = true; error = null; message = null
+            scope.launch {
+                when (val r = c.auth.sendVerification()) {
+                    AuthResult.Ok -> { message = "A new link is on its way to $email. Only the newest link works."; cooldown = 60 }
+                    is AuthResult.Failed -> error = r.message
+                }
+                sending = false
+            }
+        }, Modifier.fillMaxWidth().padding(top = 4.dp), kind = ButtonKind.TEXT, enabled = cooldown == 0 && !sending)
+        // Nothing is stored for an unconfirmed account, so signing out here needs no backup or wipe.
+        TButton("Use a different account", { c.auth.signOut() }, Modifier.fillMaxWidth(), kind = ButtonKind.TEXT)
+    }
+}
+
+/** Shown while a freshly signed-in account's backup is restored, and if that restore fails. */
+@Composable
+fun RestoreScreen(failedMessage: String?) {
+    val c = container()
+    FixedScreen {
+        Column(Modifier.weight(1f).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+            Mascot(if (failedMessage == null) MascotMood.HAPPY else MascotMood.WARM, 96.dp)
+            T(if (failedMessage == null) "Getting your Tuulit ready…" else "We couldn't restore your backup",
+                Tuulit.type.headline, modifier = Modifier.padding(top = 16.dp))
+            T(failedMessage?.let { "Check your connection and try again. ($it)" } ?: "Restoring your backup. This only takes a moment.",
+                Tuulit.type.bodySm, Tuulit.colors.inkMuted, Modifier.padding(top = 8.dp))
+        }
+        if (failedMessage != null) {
+            TButton("Try again", { c.retryRestore() }, Modifier.fillMaxWidth())
+            TButton("Continue without restoring", { c.continueWithoutRestore() }, Modifier.fillMaxWidth().padding(top = 4.dp), kind = ButtonKind.TEXT)
+        }
+    }
+}
+
+/** This build has no Firebase configuration, so nobody can sign in. There is deliberately no way past it. */
+@Composable
+fun AccountsUnavailableScreen() = FixedScreen {
+    Column(Modifier.weight(1f).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+        Mascot(MascotMood.WARM, 96.dp)
+        T("Tuulit can't sign you in", Tuulit.type.headline, modifier = Modifier.padding(top = 16.dp))
+        T(app.tuulit.data.remote.Firebase.notConfiguredMessage, Tuulit.type.bodySm, Tuulit.colors.inkMuted, Modifier.padding(top = 8.dp))
     }
 }
 

@@ -1,4 +1,4 @@
-import { Env, HttpError } from "./env";
+import { Env, HttpError, requireSecret } from "./env";
 import { assess, Urgency, worst } from "./safety";
 
 export type Tool = "chat" | "explain" | "myth" | "appointment";
@@ -45,31 +45,63 @@ export function sanitize(body: unknown): AiRequest {
   return { tool: b.tool as Tool, messages, locale: typeof b.locale === "string" ? b.locale.slice(0, 20) : undefined, context };
 }
 
+/**
+ * Turns a failed provider response into a user-safe error and logs the real cause for the owner.
+ * The provider's error text is about configuration (bad key, unknown model, quota); the person's
+ * question is never logged.
+ */
+async function providerError(env: Env, res: Response): Promise<HttpError> {
+  const detail = (await res.text().catch(() => "")).replace(/\s+/g, " ").slice(0, 300);
+  console.error(JSON.stringify({ event: "ai_provider_error", provider: env.AI_PROVIDER, model: env.AI_MODEL, status: res.status, detail }));
+  if (res.status === 429) return new HttpError(503, "Ask is very busy right now. Please try again in a minute.");
+  if (res.status >= 500) return new HttpError(503, "The answer service is temporarily unavailable. Please try again shortly.");
+  // 400/401/403/404 mean our server is misconfigured (key, model or endpoint), not the person's fault.
+  return new HttpError(503, "Ask is temporarily unavailable while we fix a problem on our side. Please try again later.");
+}
+
+/** Provider calls time out instead of hanging the app. */
+async function providerFetch(url: string, init: RequestInit): Promise<Response> {
+  try {
+    return await fetch(url, { ...init, signal: AbortSignal.timeout(45_000) });
+  } catch (e) {
+    const timedOut = (e as Error).name === "TimeoutError";
+    console.error(JSON.stringify({ event: "ai_provider_unreachable", timedOut, message: (e as Error).message }));
+    throw new HttpError(504, timedOut ? "That took too long to answer. Please try again." : "The answer service couldn't be reached. Please try again.");
+  }
+}
+
 async function callAnthropic(env: Env, req: AiRequest): Promise<string> {
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
+  const res = await providerFetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
-    headers: { "content-type": "application/json", "x-api-key": env.AI_API_KEY, "anthropic-version": "2023-06-01" },
+    headers: { "content-type": "application/json", "x-api-key": env.AI_API_KEY.trim(), "anthropic-version": "2023-06-01" },
     body: JSON.stringify({ model: env.AI_MODEL, max_tokens: 700, system: systemPrompt(req), messages: req.messages }),
   });
-  if (!res.ok) throw new HttpError(502, "The answer service is unavailable right now. Please try again.");
+  if (!res.ok) throw await providerError(env, res);
   const body = (await res.json()) as { content: Array<{ type: string; text?: string }> };
   return body.content.filter((c) => c.type === "text").map((c) => c.text).join("\n").trim();
 }
 
 async function callOpenAiCompatible(env: Env, req: AiRequest): Promise<string> {
   if (!env.AI_BASE_URL) throw new HttpError(503, "AI_BASE_URL is not set.");
-  const res = await fetch(`${env.AI_BASE_URL.replace(/\/$/, "")}/chat/completions`, {
+  const res = await providerFetch(`${env.AI_BASE_URL.replace(/\/$/, "")}/chat/completions`, {
     method: "POST",
-    headers: { "content-type": "application/json", authorization: `Bearer ${env.AI_API_KEY}` },
-    body: JSON.stringify({ model: env.AI_MODEL, max_tokens: 700, messages: [{ role: "system", content: systemPrompt(req) }, ...req.messages] }),
+    headers: { "content-type": "application/json", authorization: `Bearer ${env.AI_API_KEY.trim()}` },
+    // Gemini "thinking" models spend output tokens on reasoning, so a small max_tokens cut answers off
+    // mid-sentence. Keep reasoning low and leave room for the visible answer.
+    body: JSON.stringify({
+      model: env.AI_MODEL, max_tokens: 4096, messages: [{ role: "system", content: systemPrompt(req) }, ...req.messages],
+      ...(env.AI_BASE_URL.includes("generativelanguage.googleapis.com") ? { reasoning_effort: "low" } : {}),
+    }),
   });
-  if (!res.ok) throw new HttpError(502, "The answer service is unavailable right now. Please try again.");
-  const body = (await res.json()) as { choices: Array<{ message: { content: string } }> };
-  return (body.choices[0]?.message?.content ?? "").trim();
+  if (!res.ok) throw await providerError(env, res);
+  const body = (await res.json()) as { choices: Array<{ message: { content: string }; finish_reason?: string }> };
+  const choice = body.choices?.[0];
+  if (choice?.finish_reason === "length") console.warn(JSON.stringify({ event: "ai_truncated", model: env.AI_MODEL }));
+  return (choice?.message?.content ?? "").trim();
 }
 
 export async function answer(env: Env, req: AiRequest): Promise<AiResponse> {
-  if (!env.AI_API_KEY) throw new HttpError(503, "Ask isn't configured on the server yet (AI_API_KEY missing).");
+  requireSecret("AI_API_KEY", env.AI_API_KEY, "Ask isn't set up on our server yet. Please try again later.");
   const question = req.messages[req.messages.length - 1].content;
   const urgency = assess(question);
   const raw = env.AI_PROVIDER === "openai_compatible" ? await callOpenAiCompatible(env, req) : await callAnthropic(env, req);

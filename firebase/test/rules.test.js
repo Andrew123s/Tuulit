@@ -16,7 +16,7 @@ beforeAll(async () => {
 afterAll(async () => env.cleanup());
 beforeEach(async () => env.clearFirestore());
 
-const db = (uid) => (uid ? env.authenticatedContext(uid).firestore() : env.unauthenticatedContext().firestore());
+const db = (uid, verified = true) => (uid ? env.authenticatedContext(uid, { email_verified: verified }).firestore() : env.unauthenticatedContext().firestore());
 
 async function seed(fn) {
   await env.withSecurityRulesDisabled(async (ctx) => fn(ctx.firestore()));
@@ -41,6 +41,13 @@ describe("private backup", () => {
     await assertFails(getDoc(doc(db(STRANGER), "users", OWNER, "dailyLogs", "20000")));
     await assertFails(setDoc(doc(db(STRANGER), "users", OWNER, "dailyLogs", "1"), { epochDay: 1 }));
     await assertFails(getDoc(doc(db(null), "users", OWNER)));
+  });
+
+  it("refuses a signed-in user whose email isn't confirmed, even for their own data", async () => {
+    await seed((f) => setDoc(doc(f, "users", OWNER, "dailyLogs", "20000"), { epochDay: 20000, updatedAt: 1 }));
+    await assertFails(getDoc(doc(db(OWNER, false), "users", OWNER, "dailyLogs", "20000")));
+    await assertFails(setDoc(doc(db(OWNER, false), "users", OWNER, "dailyLogs", "1"), { epochDay: 1, updatedAt: 1 }));
+    await assertFails(setDoc(doc(db(OWNER, false), "invites", "4K8P2Q"), { ownerUid: OWNER, ownerName: "Maya", status: "open", expiresAt: Date.now() + 3600_000 }));
   });
 
   it("rejects unknown collections and oversized notes", async () => {

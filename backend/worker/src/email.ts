@@ -1,4 +1,4 @@
-import { Env, HttpError } from "./env";
+import { Env, HttpError, requireSecret } from "./env";
 
 /* Brevo transactional email. The API key exists only as a Worker secret. Templates are inline,
    use the Tuulit palette, and never contain cycle or health details. */
@@ -25,11 +25,6 @@ export const templates = {
     html: layout(name ? `Welcome, ${name}` : "Welcome to Tuulit",
       "<p>Your account is ready. Your logs stay encrypted on your phone; your account lets you back them up, use Ask and connect with someone you trust.</p><p>You can delete your account and everything in it at any time from You → Account.</p>"),
   }),
-  verify: (link: string) => ({
-    subject: "Confirm your email for Tuulit",
-    html: layout("Confirm your email", "<p>Tap the button to confirm this address. It keeps your account recoverable.</p><p>If you didn't create a Tuulit account, you can ignore this email.</p>",
-      { label: "Confirm email", url: link }),
-  }),
   deleted: () => ({
     subject: "Your Tuulit account was deleted",
     html: layout("Your account is deleted", "<p>Your account, cloud backup, voice-note backups and connections have been removed. Thank you for trying Tuulit.</p><p>If you didn't do this, reply to this email.</p>"),
@@ -37,15 +32,17 @@ export const templates = {
 };
 
 export async function sendEmail(env: Env, to: string, t: { subject: string; html: string }, replyTo?: { email: string; name: string }): Promise<void> {
-  if (!env.BREVO_API_KEY) throw new HttpError(503, "Email isn't configured on the server (BREVO_API_KEY missing).");
+  const key = requireSecret("BREVO_API_KEY", env.BREVO_API_KEY, "Email isn't set up on our server yet. Please try again later.");
   const res = await fetch("https://api.brevo.com/v3/smtp/email", {
     method: "POST",
-    headers: { "content-type": "application/json", accept: "application/json", "api-key": env.BREVO_API_KEY },
+    headers: { "content-type": "application/json", accept: "application/json", "api-key": key },
     body: JSON.stringify({ sender: { email: env.BREVO_SENDER_EMAIL, name: env.BREVO_SENDER_NAME }, to: [{ email: to }], subject: t.subject, htmlContent: t.html, tags: ["transactional"], ...(replyTo ? { replyTo } : {}) }),
   });
   if (!res.ok) {
-    // Log status only: never log addresses or bodies.
-    console.warn(JSON.stringify({ event: "brevo_error", status: res.status }));
+    // Log Brevo's error code and message with any address scrubbed; never the email body.
+    let code = "", message = "";
+    try { const j = (await res.json()) as { code?: string; message?: string }; code = j.code ?? ""; message = (j.message ?? "").replace(/[^\s@]+@[^\s@]+/g, "<address>").slice(0, 300); } catch { /* not JSON */ }
+    console.warn(JSON.stringify({ event: "brevo_error", status: res.status, code, message }));
     throw new HttpError(502, "The email couldn't be sent. Please try again later.");
   }
   console.log(JSON.stringify({ event: "brevo_sent", subject: t.subject }));

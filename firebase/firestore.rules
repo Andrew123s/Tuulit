@@ -5,11 +5,14 @@ rules_version = '2';
 // - invites/{code}   : one-time codes. Readable by exact code only; the owner creates, the invitee accepts once.
 // - connections/{id} : created by the invitee with every permission OFF; only the owner can grant permissions.
 // - shared/{id}      : the member-visible status. The owner may only write fields they have permitted.
+// All access requires a confirmed email address (see signedIn()).
 // The Cloudflare Worker uses the service account (admin) for FCM delivery and account deletion.
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    function signedIn() { return request.auth != null; }
+    // Every rule needs a signed-in user whose email address is confirmed. An unconfirmed account can't read
+    // or write anything here; the app shows its verify-email screen until the address is confirmed.
+    function signedIn() { return request.auth != null && request.auth.token.email_verified == true; }
     function isUser(uid) { return signedIn() && request.auth.uid == uid; }
     function nowMs() { return request.time.toMillis(); }
 

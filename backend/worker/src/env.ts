@@ -26,7 +26,7 @@ export interface Env {
 }
 
 export class HttpError extends Error {
-  constructor(public status: number, message: string) {
+  constructor(public status: number, message: string, public code?: string) {
     super(message);
   }
 }
@@ -36,3 +36,14 @@ export const json = (body: unknown, status = 200): Response =>
     status,
     headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" },
   });
+
+/** Returns a usable API key, or throws 503. A badly pasted secret (for example a stray Ctrl+V keystroke stored as
+    the value) fails here with a clear log line instead of an opaque provider error. Logs the name and length only. */
+export function requireSecret(name: string, value: string | undefined, userMessage: string): string {
+  const v = (value ?? "").trim();
+  if (v.length < 20 || /[^!-~]/.test(v)) {
+    console.error(JSON.stringify({ event: "secret_invalid", name, length: v.length }));
+    throw new HttpError(503, userMessage);
+  }
+  return v;
+}

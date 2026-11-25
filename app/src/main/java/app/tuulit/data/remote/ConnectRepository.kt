@@ -203,6 +203,13 @@ class ConnectRepository(
             .set(mapOf("token" to token, "platform" to "android", "updatedAt" to FieldValue.serverTimestamp())).await()
     }
 
+    /** Removes this phone's push token from the account so a signed-out phone gets no Connect alerts. */
+    suspend fun unregisterDevice(token: String) {
+        val store = db ?: return
+        val uid = auth.currentUid ?: return
+        store.collection("users").document(uid).collection("devices").document(token.takeLast(64)).delete().await()
+    }
+
     private fun newCode(): String {
         val alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
         val r = SecureRandom()

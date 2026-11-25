@@ -38,6 +38,11 @@ import app.tuulit.ui.ToastHost
 import app.tuulit.ui.auth.AuthMode
 import app.tuulit.ui.auth.AuthScreen
 import app.tuulit.ui.auth.LockScreen
+import app.tuulit.ui.auth.AccountsUnavailableScreen
+import app.tuulit.ui.auth.RestoreScreen
+import app.tuulit.ui.auth.VerifyEmailScreen
+import app.tuulit.ui.onboarding.Welcome
+import app.tuulit.data.remote.AuthState
 import app.tuulit.ui.designsystem.Mascot
 import app.tuulit.ui.designsystem.MascotMood
 import app.tuulit.ui.designsystem.Tuulit
@@ -63,6 +68,8 @@ class MainActivity : ComponentActivity() {
         setContent {
             val snapshot by container.cycleState.snapshot.collectAsState()
             val unlocked by container.unlocked.collectAsState()
+            val authState by container.auth.state.collectAsState(initial = container.auth.current)
+            val session by container.session.collectAsState()
             val s = snapshot.settings
             // With app lock on, keep screens out of the recent-apps thumbnail and screenshots.
             LaunchedEffect(s.appLockEnabled) {
@@ -76,10 +83,18 @@ class MainActivity : ComponentActivity() {
                         isAppearanceLightStatusBars = !dark; isAppearanceLightNavigationBars = !dark
                     }
                 }
+                // Auth gate: nothing personal is shown until a signed-in account has confirmed its email
+                // and its data is ready. Firestore rules and the Worker enforce the same on the server.
+                val a = authState
                 when {
                     !snapshot.loaded -> Splash()
+                    a is AuthState.Unavailable -> AccountsUnavailableScreen()
+                    a is AuthState.SignedOut -> SignedOutGate()
+                    a is AuthState.SignedIn && !a.emailVerified -> VerifyEmailScreen(a.email)
+                    session is AppContainer.Session.Failed -> RestoreScreen((session as AppContainer.Session.Failed).message)
+                    session != AppContainer.Session.Ready -> RestoreScreen(null)
                     s.appLockEnabled && !unlocked -> LockScreen(onUnlocked = { container.unlocked.value = true })
-                    !s.onboardingCompleted -> OnboardingGate()
+                    !s.onboardingCompleted -> OnboardingFlow()
                     else -> MainShell(pendingRoute.value) { pendingRoute.value = null }
                 }
             }
@@ -110,11 +125,15 @@ private fun Splash() {
     Box(Modifier.fillMaxSize().background(Tuulit.colors.cream), contentAlignment = Alignment.Center) { Mascot(MascotMood.WARM, 96.dp) }
 }
 
+/** Welcome, then create an account or sign in. There is no way into the app without an account. */
 @Composable
-private fun OnboardingGate() {
-    var signingIn by remember { mutableStateOf(false) }
-    if (signingIn) AuthScreen(AuthMode.SIGN_IN, onDone = { signingIn = false }, onClose = { signingIn = false })
-    else OnboardingFlow(onSignIn = { signingIn = true })
+private fun SignedOutGate() {
+    var mode by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf<AuthMode?>(null) }
+    when (val m = mode) {
+        null -> Welcome(onStart = { mode = AuthMode.REGISTER }, onSignIn = { mode = AuthMode.SIGN_IN })
+        // onDone: the auth state changes and the gate moves on by itself.
+        else -> AuthScreen(m, onDone = {}, onClose = { mode = null })
+    }
 }
 
 @Composable

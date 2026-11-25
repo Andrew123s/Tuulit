@@ -46,10 +46,22 @@ class ApiClientTest {
     @Test fun mapsErrors() = runTest {
         server.enqueue(MockResponse().setResponseCode(429))
         server.enqueue(MockResponse().setResponseCode(401))
+        server.enqueue(MockResponse().setResponseCode(403).setBody("""{"error":"Confirm your email","code":"email_unverified"}"""))
+        server.enqueue(MockResponse().setResponseCode(503).setBody("""{"error":"Ask is very busy right now."}"""))
         server.enqueue(MockResponse().setResponseCode(500).setBody("""{"error":"Provider unavailable"}"""))
+        server.enqueue(MockResponse().setResponseCode(200).setBody("<html>not json</html>"))
         expect<ApiError.RateLimited> { client().post("/x", JSONObject()) }
-        expect<ApiError.NotSignedIn> { client().post("/x", JSONObject()) }
+        expect<ApiError.SessionExpired> { client().post("/x", JSONObject()) }
+        expect<ApiError.EmailUnverified> { client().post("/x", JSONObject()) }
+        try { client().post("/x", JSONObject()); fail() } catch (e: ApiError.Unavailable) { assertEquals("Ask is very busy right now.", e.message) }
         try { client().post("/x", JSONObject()); fail() } catch (e: ApiError.Server) { assertEquals("Provider unavailable", e.message) }
+        expect<ApiError.InvalidResponse> { client().post("/x", JSONObject()) }
+    }
+
+    @Test fun mapsTimeout() = runTest {
+        server.enqueue(MockResponse().setBody("{}").setHeadersDelay(3, java.util.concurrent.TimeUnit.SECONDS))
+        val fast = ApiClient(tokens, "http://127.0.0.1:${server.port}", okhttp3.OkHttpClient.Builder().readTimeout(1, java.util.concurrent.TimeUnit.SECONDS).build())
+        expect<ApiError.Timeout> { fast.post("/x", JSONObject()) }
     }
 
     @Test fun refusesWithoutTokenOrUrl() = runTest {

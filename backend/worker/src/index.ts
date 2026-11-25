@@ -4,7 +4,7 @@ import { removeAllConnections } from "./connect";
 import { notify } from "./connect";
 import { sendEmail, templates } from "./email";
 import { Env, HttpError, json } from "./env";
-import { deleteAuthUser, deleteDocByName, listDocs, verificationLink } from "./google";
+import { deleteAuthUser, deleteDocByName, listDocs } from "./google";
 import { Claims, verifyAppCheck, verifyIdToken } from "./jwt";
 import { blob, deleteAllFor, deleteObject, downloadUrl, uploadUrl } from "./media";
 
@@ -51,6 +51,12 @@ export async function route(req: Request, env: Env): Promise<Response> {
   const uid = claims.sub;
   const body = await readJson(req);
 
+  // Ask, voice-note backups and Connect need a confirmed email address, matching the Firestore rules.
+  // Welcome email and account deletion stay open so an unconfirmed account can still be removed.
+  if (!["/v1/email/welcome", "/v1/account/delete"].includes(path) && claims.email_verified !== true) {
+    throw new HttpError(403, "Confirm your email address to use this. Check your inbox for the link.", "email_unverified");
+  }
+
   switch (path) {
     case "/v1/ai": {
       await limit(env, uid, "ai", Number(env.AI_DAILY_LIMIT || 60));
@@ -62,13 +68,6 @@ export async function route(req: Request, env: Env): Promise<Response> {
       if (!claims.email) throw new HttpError(400, "No email on this account.");
       await limit(env, uid, "welcome", 1);
       await sendEmail(env, claims.email, templates.welcome(String(body.displayName ?? "").slice(0, 40)));
-      return json({ ok: true });
-    }
-    case "/v1/email/verification": {
-      if (!claims.email) throw new HttpError(400, "No email on this account.");
-      if (claims.email_verified) return json({ ok: true, alreadyVerified: true });
-      await limit(env, uid, "verify", 5);
-      await sendEmail(env, claims.email, templates.verify(await verificationLink(env, claims.email)));
       return json({ ok: true });
     }
     case "/v1/media/upload-url":
@@ -110,7 +109,7 @@ export default {
     try {
       return await route(req, env);
     } catch (e) {
-      if (e instanceof HttpError) return json({ error: e.message }, e.status);
+      if (e instanceof HttpError) return json(e.code ? { error: e.message, code: e.code } : { error: e.message }, e.status);
       console.error(JSON.stringify({ event: "unhandled", message: (e as Error).message }));
       return json({ error: "Something went wrong on our side. Please try again." }, 500);
     }

@@ -13,6 +13,7 @@ import com.google.firebase.auth.UserProfileChangeRequest
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.tasks.await
 import org.json.JSONObject
@@ -34,13 +35,17 @@ class AuthRepository(private val firebase: Firebase, private val api: ApiClient)
 
     val state: Flow<AuthState> = firebase.auth?.let { auth ->
         callbackFlow {
-            val l = com.google.firebase.auth.FirebaseAuth.AuthStateListener { a -> trySend(a.currentUser.toState()) }
-            auth.addAuthStateListener(l)
-            awaitClose { auth.removeAuthStateListener(l) }
-        }
+            // The ID-token listener fires on sign-in, sign-out and every token refresh, so a confirmed email
+            // (picked up by refresh()) reaches the UI without waiting for a new sign-in.
+            val l = com.google.firebase.auth.FirebaseAuth.IdTokenListener { a -> trySend(a.currentUser.toState()) }
+            auth.addIdTokenListener(l)
+            awaitClose { auth.removeIdTokenListener(l) }
+        }.distinctUntilChanged()
     } ?: flowOf(AuthState.Unavailable)
 
     val currentUid: String? get() = firebase.auth?.currentUser?.uid
+    /** Signed in with a confirmed email: the only state in which Firestore and the Worker accept requests. */
+    val isVerified: Boolean get() = firebase.auth?.currentUser?.isEmailVerified == true
     val current: AuthState get() = firebase.auth?.currentUser.toState().takeIf { firebase.isConfigured } ?: AuthState.Unavailable
 
     override suspend fun idToken(): String? = firebase.auth?.currentUser?.getIdToken(false)?.await()?.token
@@ -55,7 +60,8 @@ class AuthRepository(private val firebase: Firebase, private val api: ApiClient)
             if (displayName.isNotBlank()) {
                 user.updateProfile(UserProfileChangeRequest.Builder().setDisplayName(displayName.trim()).build()).await()
             }
-            sendVerification()
+            // The verify-email screen offers "Send again", so a failure here never blocks registration.
+            runCatching { user.sendEmailVerification().await() }
             // Welcome email is best-effort through the Worker + Brevo; registration never fails because of it.
             runCatching { api.post("/v1/email/welcome", JSONObject().put("displayName", displayName.trim())) }
         }
@@ -78,18 +84,24 @@ class AuthRepository(private val firebase: Firebase, private val api: ApiClient)
     }
 
     /**
-     * Sends the verification email. The branded Brevo email is tried first through the Worker
-     * (which generates the Firebase link server-side); Firebase's built-in email is the fallback.
+     * Sends the verification email with Firebase Authentication's built-in sender. This is the only
+     * verification path: it needs no server secret or DNS setup, and Firebase rate-limits it.
      */
     suspend fun sendVerification(): AuthResult {
         val user = firebase.auth?.currentUser ?: return AuthResult.Failed("Sign in first.")
-        val viaBrevo = runCatching { api.post("/v1/email/verification", JSONObject()) }.isSuccess
-        return if (viaBrevo) AuthResult.Ok else guard { user.sendEmailVerification().await() }
+        return guard { user.sendEmailVerification().await() }
     }
 
+    /** Reloads the user from Firebase (picks up a confirmed email) and refreshes the ID token so the
+     *  server sees email_verified too. An invalid or deleted account is signed out. */
     suspend fun refresh(): AuthState {
-        firebase.auth?.currentUser?.reload()?.await()
-        firebase.auth?.currentUser?.getIdToken(true)?.await()
+        val user = firebase.auth?.currentUser ?: return current
+        try {
+            user.reload().await()
+            user.getIdToken(true).await()
+        } catch (e: FirebaseAuthInvalidUserException) {
+            firebase.auth?.signOut()
+        }
         return current
     }
 

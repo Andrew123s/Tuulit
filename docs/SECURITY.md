@@ -15,17 +15,18 @@ Menstrual and reproductive health data is highly sensitive. These are the contro
 | Cleartext HTTP disabled | `android:usesCleartextTraffic="false"` |
 | CSV export neutralises spreadsheet formulas and is written only to the share cache | `TrackingRepository.exportCsv`, `FileProvider` |
 | Voice notes stored in app-private storage. Microphone permission is asked for only when tapped. | `data/remote/MediaRepository.kt`, `ui/log/Voice.kt` |
+| No personal screen without a signed-in account with a confirmed email. Local data belongs to one account (`session_uid`). Signing out backs up and then erases it from the phone. A different account signing in erases the previous account's data first. | `MainActivity` (auth gate), `AppContainer.onAuthChanged`, `AccountRepository.signOut` |
 
 ## In the cloud
 
 | Control | Where |
 |---|---|
-| Firestore: `users/{uid}/**` is readable and writable only by that user. Field and size limits apply. Everything else is denied by default. | `firebase/firestore.rules` |
+| Firestore: every rule requires a signed-in user with a **confirmed email** (`email_verified`). `users/{uid}/**` is readable and writable only by that user. Field and size limits apply. Everything else is denied by default. | `firebase/firestore.rules`, 8 emulator tests |
 | Connect: invites are one-time, expire in 24 h and can't be listed. Connections are created with every permission **off**, and only the owner can change permissions. The member can read only `shared/{id}`, and the owner can only write fields they have permitted. Either side can revoke. | `firebase/firestore.rules`, 7 emulator tests |
 | Symptoms, moods, notes and journal text are **never** shareable | `ConnectRepository.publishStatus`, rules key allow-list |
-| Every Worker route verifies the Firebase ID token (RS256, Google JWKS, audience, issuer, expiry). App Check runs in monitor or enforce mode. | `backend/worker/src/jwt.ts`, `index.ts` |
-| Per-user daily rate limits: AI 60, verification emails 5, uploads 50, pushes 30 | `index.ts` (`limit`) |
-| Secrets exist only as Worker secrets: AI key, Brevo key, Firebase service account, media signing key. None are in the app, the repo or the docs. | `wrangler.toml` comments, `.gitignore` |
+| Every Worker route verifies the Firebase ID token (RS256, Google JWKS, audience, issuer, expiry). Ask, media and Connect also require `email_verified` (403, code `email_unverified`). Only the welcome email and account deletion accept unconfirmed accounts. App Check runs in monitor or enforce mode. | `backend/worker/src/jwt.ts`, `index.ts` |
+| Per-user daily rate limits: AI 60, uploads 50, pushes 30, welcome email 1. Firebase rate-limits verification and reset emails. | `index.ts` (`limit`) |
+| Secrets exist only as Worker secrets: AI key, Brevo key, Firebase service account, media signing key. None are in the app, the repo or the docs. A malformed key is refused with a `secret_invalid` log (name and length only). | `wrangler.toml` comments, `.gitignore`, `env.ts` (`requireSecret`) |
 | R2 bucket is private. Access is only through 5-minute HMAC-signed URLs scoped to `users/{uid}/`. PUT and GET signatures are distinct. | `backend/worker/src/media.ts` |
 | AI: the cycle summary is sent only with consent ("Personal answers in Ask"), and never includes notes, journal text or dates. Conversations are stored only on the device. Server-side safety re-check. The system prompt forbids diagnosis and contraception claims. | `AiRepository`, `backend/worker/src/ai.ts`, `safety.ts` |
 | Account deletion requires recent re-authentication and deletes the Firestore backup, devices, connections, shared status, invites, R2 objects and the auth user, then wipes the device | `AccountRepository`, `backend/worker/src/index.ts` (`deleteAccount`) |

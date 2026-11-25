@@ -19,7 +19,7 @@ Until these steps are done, the app runs in local-only mode. Tracking, Care, Pla
 
 1. Go to Build → Authentication → Get started → Sign-in method → enable **Email/Password**. Leave "Email link" off.
 2. Under Settings → User actions, keep "Email enumeration protection" **on**.
-3. Under Templates, set the sender name to Tuulit. Tuulit sends its own verification email through Brevo. Firebase's own template is the fallback, and is still used for password reset.
+3. Under Templates, set the sender name to Tuulit and adjust the **Email address verification** and **Password reset** templates if you like. Tuulit uses these built-in Firebase emails for both. It is the only verification path (see `docs/AUTH_AND_SESSION.md`).
 
 ## 4. Firestore
 
@@ -32,6 +32,7 @@ Until these steps are done, the app runs in local-only mode. Tracking, Care, Pla
    npx firebase use --add          # choose your project
    npx firebase deploy --only firestore:rules,firestore:indexes
    ```
+   Every rule requires `request.auth.token.email_verified == true`, so an unconfirmed account can't read or write anything.
 3. Run the rules tests locally against the emulator. This needs Java 11+:
    ```
    cd firebase && npm test
@@ -61,7 +62,7 @@ FCM is enabled by default. The Worker sends with the **HTTP v1 API** using the s
 The Worker uses it for:
 - Firestore REST (reading a connection before sending a push, deleting an account's data)
 - FCM v1 sends
-- Identity Toolkit (generating verification links for Brevo, deleting the auth user)
+- Identity Toolkit (deleting the auth user)
 
 All of these are free on Spark.
 

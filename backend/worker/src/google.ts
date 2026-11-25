@@ -83,16 +83,6 @@ export async function sendFcm(env: Env, token: string, data: Record<string, stri
   throw new HttpError(502, "Push service failed.");
 }
 
-/** Generates an email-verification link for the user (sent by Brevo instead of Firebase's default email). */
-export async function verificationLink(env: Env, email: string): Promise<string> {
-  const r = await gfetch(env, `https://identitytoolkit.googleapis.com/v1/projects/${env.FIREBASE_PROJECT_ID}/accounts:sendOobCode`, {
-    method: "POST",
-    body: JSON.stringify({ requestType: "VERIFY_EMAIL", email, returnOobLink: true }),
-  });
-  if (!r.ok) throw new HttpError(502, "Couldn't create a verification link.");
-  return ((await r.json()) as { oobLink: string }).oobLink;
-}
-
 export async function deleteAuthUser(env: Env, uid: string): Promise<void> {
   const r = await gfetch(env, `https://identitytoolkit.googleapis.com/v1/projects/${env.FIREBASE_PROJECT_ID}/accounts:delete`, {
     method: "POST",

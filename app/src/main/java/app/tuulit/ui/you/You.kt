@@ -305,6 +305,7 @@ fun AccountScreen(onBack: () -> Unit, go: (String) -> Unit) {
     val s by c.prefs.settings.collectAsState(initial = null)
     var syncing by remember { mutableStateOf(false) }
     var deleteSheet by remember { mutableStateOf(false) }
+    var signOutSheet by remember { mutableStateOf(false) }
     ScreenColumn {
         AppBar("Account and backup", onBack)
         when (val a = auth) {
@@ -328,9 +329,34 @@ fun AccountScreen(onBack: () -> Unit, go: (String) -> Unit) {
                             shell.showToast(when (r) { is SyncResult.Done -> "Backed up"; is SyncResult.Failed -> r.message; SyncResult.Skipped -> "Nothing to back up" })
                         }
                     })
-                ListRow("Sign out", sub = "Your data stays on this phone", icon = TuulitIcons.User, onClick = { c.auth.signOut(); shell.showToast("Signed out") })
+                ListRow("Sign out", sub = "Backs up, then removes your data from this phone", icon = TuulitIcons.User, onClick = { signOutSheet = true })
                 ListRow("Delete account", sub = "Removes your account, cloud backup and connections", titleColor = Tuulit.colors.alert, last = true, onClick = { deleteSheet = true })
                 T("Backups are stored in Firestore under your account only. Only you can read them.", Tuulit.type.caption, Tuulit.colors.inkFaint, Modifier.padding(top = 12.dp))
+            }
+        }
+    }
+    if (signOutSheet) {
+        var busy by remember { mutableStateOf(false) }
+        var backupError by remember { mutableStateOf<String?>(null) }
+        fun doSignOut(force: Boolean) {
+            busy = true
+            // App scope: signing out replaces this screen, which would cancel a screen-scoped coroutine.
+            c.appScope.launch {
+                when (val r = c.signOut(force)) {
+                    is app.tuulit.data.SignOutResult.BackupFailed -> { backupError = r.message; busy = false }
+                    app.tuulit.data.SignOutResult.Done -> Unit
+                }
+            }
+        }
+        TuulitSheet({ if (!busy) signOutSheet = false }) {
+            T("Sign out?", Tuulit.type.headline)
+            T(backupError?.let { "We couldn't back up your latest changes ($it). If you sign out now, changes made since your last backup will be lost." }
+                ?: "Your data is backed up to your account first, then removed from this phone. Sign in again any time to get it back.",
+                Tuulit.type.body, Tuulit.colors.inkMuted, Modifier.padding(top = 8.dp, bottom = 20.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                TButton("Cancel", { signOutSheet = false }, Modifier.weight(1f), kind = ButtonKind.QUIET, enabled = !busy)
+                TButton(if (backupError != null) "Sign out anyway" else "Sign out", { doSignOut(force = backupError != null) }, Modifier.weight(1f),
+                    kind = if (backupError != null) ButtonKind.DANGER else ButtonKind.PRIMARY, loading = busy)
             }
         }
     }

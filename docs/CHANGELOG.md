@@ -1,5 +1,25 @@
 # Changelog
 
+## 2.3.0 — 2026-11-25: required accounts, real sign-out, Ask and email fixes
+
+Root causes and design are in `docs/AUTH_AND_SESSION.md`.
+
+### Changed
+- **An account is now required.** Signed-out people see the welcome screen with "Create an account" and "I already have an account". Unconfirmed accounts see a verify-email screen. The cloud backup restores before the app opens on a new phone, and returning accounts skip onboarding.
+- **Sign out** backs up first, unregisters push, signs out and erases the account's data from the phone (theme and reduced motion are kept). The account and its backup are untouched.
+- **Account switching:** local data belongs to one account; a different account signing in erases the previous one's data first. Data from before 2.3.0 is adopted by the first account that signs in.
+- **Email verification** uses Firebase's built-in email only. The Brevo verification route was removed.
+- Clearer error messages for offline, timeout, expired sign-in, unconfirmed email, busy or unavailable Ask, and unexpected replies.
+- Ask skips failed exchanges in the history it sends, so the model answers the latest question.
+
+### Fixed
+- Ask failed for every question: the Worker's `AI_API_KEY` secret held a single Ctrl+V character. Answers were also cut off by Gemini's thinking tokens.
+- Brevo emails failed for the same reason (`BREVO_API_KEY`).
+
+### Security
+- Firestore rules and the Worker (Ask, media, Connect) require a confirmed email.
+- The Worker refuses malformed secrets with a `secret_invalid` log, and logs Brevo's error reason with addresses removed.
+
 ## 2.1.0 — 2026-11-23: warm, light-first UI redesign
 
 This release responds to tester feedback that 2.0 felt basic and depressing. Details are in `docs/UI_REDESIGN.md`.

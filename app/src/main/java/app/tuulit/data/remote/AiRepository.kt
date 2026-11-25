@@ -66,12 +66,14 @@ class AiRepository(private val api: ApiClient, private val dao: TuulitDao) {
         val body = JSONObject()
             .put("tool", tool.wire)
             .put("messages", JSONArray().apply {
-                history.filter { !it.failed }.forEach { put(JSONObject().put("role", it.role).put("content", it.text)) }
+                // Skip failed replies and the questions they answered, so the model answers the latest question.
+                history.filterIndexed { i, m -> !m.failed && !(m.role == "user" && history.getOrNull(i + 1)?.failed == true) }.forEach { put(JSONObject().put("role", it.role).put("content", it.text)) }
             })
             .put("locale", java.util.Locale.getDefault().toLanguageTag())
         if (context != null) body.put("context", context.toJson())
         try {
             val res = api.post("/v1/ai", body)
+            if (res.optString("text").isBlank()) throw ApiError.InvalidResponse
             val urgency = runCatching { UrgencyLevel.valueOf(res.optString("urgency", "NONE")) }.getOrDefault(UrgencyLevel.NONE)
             val worst = if (urgency.ordinal > local.level.ordinal) urgency else local.level
             val reply = AiReply(res.optString("text").trim(), worst, res.optString("verdict").takeIf { it.isNotEmpty() })

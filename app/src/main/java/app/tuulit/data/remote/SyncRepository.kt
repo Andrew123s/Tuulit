@@ -21,7 +21,7 @@ import kotlinx.coroutines.tasks.await
 
 sealed interface SyncResult {
     object Skipped : SyncResult
-    data class Done(val pushed: Int, val pulled: Int) : SyncResult
+    data class Done(val pushed: Int, val pulled: Int, val cloudHadData: Boolean = false) : SyncResult
     data class Failed(val message: String) : SyncResult
 }
 
@@ -37,6 +37,8 @@ class SyncRepository(
     private val prefs: PreferencesRepository,
 ) {
     private val mutex = Mutex()
+    /** Set by pull(): the account already had a backup or synced settings in the cloud. */
+    private var cloudHadData = false
 
     suspend fun sync(fullPull: Boolean = false): SyncResult = mutex.withLock {
         val db = firebase.firestore ?: return SyncResult.Skipped
@@ -44,10 +46,12 @@ class SyncRepository(
         try {
             val startedAt = Dates.nowMillis()
             val last = prefs.current().lastSyncAt
+            cloudHadData = false
             val pulled = if (fullPull || last == 0L) pull(db, uid) else 0
+            val hadData = cloudHadData
             val pushed = push(db, uid, if (fullPull) 0 else last)
             prefs.setLastSync(startedAt)
-            SyncResult.Done(pushed, pulled)
+            SyncResult.Done(pushed, pulled, hadData)
         } catch (e: Exception) {
             Log.w("TuulitSync", "sync failed", e)
             SyncResult.Failed(e.message ?: "Sync failed")
@@ -107,7 +111,11 @@ class SyncRepository(
     private suspend fun pull(db: FirebaseFirestore, uid: String): Int {
         val root = userDoc(db, uid)
         var n = 0
-        root.collection("cycles").get().await().documents.forEach { d ->
+        val rootSnap = root.get().await()
+        cloudHadData = rootSnap.get("settings") != null
+        val remoteCycles = root.collection("cycles").get().await().documents
+        if (remoteCycles.isNotEmpty()) cloudHadData = true
+        remoteCycles.forEach { d ->
             val remote = CycleEntity(d.id, d.long("startEpochDay"), d.getLong("endEpochDay"), d.long("updatedAt"), d.getBoolean("deleted") == true)
             val local = dao.cycle(d.id)
             if (local == null || local.updatedAt < remote.updatedAt) {
@@ -153,7 +161,7 @@ class SyncRepository(
         }
         // Settings that follow the person between devices (users/{uid}.settings), last write wins.
         @Suppress("UNCHECKED_CAST")
-        (root.get().await().get("settings") as? Map<String, Any?>)?.let { prefs.applyRemoteSettings(it) }
+        (rootSnap.get("settings") as? Map<String, Any?>)?.let { prefs.applyRemoteSettings(it) }
         root.collection("games").get().await().documents.forEach { d ->
             val local = dao.gameScore(d.id)
             val best = maxOf(local?.bestScore ?: 0, d.int("bestScore"))

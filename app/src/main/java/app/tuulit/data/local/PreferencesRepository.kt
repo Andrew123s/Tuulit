@@ -123,6 +123,8 @@ class PreferencesRepository(private val context: Context) {
         val SUGG_DISMISSED = longPreferencesKey("suggestion_dismissed")
         val ACCOUNT_PROMPT = booleanPreferencesKey("account_prompt_dismissed")
         val SYNCED_AT = longPreferencesKey("synced_settings_at")
+        /** Firebase uid that owns the data on this phone; blank for data created before accounts were required. */
+        val SESSION_UID = stringPreferencesKey("session_uid")
     }
 
     private val store get() = context.tuulitPrefs
@@ -217,6 +219,23 @@ class PreferencesRepository(private val context: Context) {
     suspend fun dismissSuggestion(day: Long) = edit { it[K.SUGG_DISMISSED] = day }
     suspend fun dismissAccountPrompt() = edit { it[K.ACCOUNT_PROMPT] = true }
     suspend fun clear() = store.edit { it.clear() }
+
+    /** The account that owns the local data, or "" when none has claimed it yet. */
+    suspend fun sessionUid(): String = store.data.first()[K.SESSION_UID] ?: ""
+    suspend fun setSessionUid(uid: String) = edit { it[K.SESSION_UID] = uid }
+
+    /** Marks onboarding done, used when a returning account already has data in the cloud. */
+    suspend fun markOnboarded() = edit { it[K.ONBOARDED] = true }
+
+    /**
+     * Erases every personal setting on sign-out (name, cycle settings, PIN, reminders, sync state) so the
+     * next account starts clean. Only device display preferences (theme, reduced motion) are kept.
+     */
+    suspend fun clearUserData() = store.edit { p ->
+        val theme = p[K.THEME]; val motion = p[K.REDUCED_MOTION]
+        p.clear()
+        theme?.let { p[K.THEME] = it }; motion?.let { p[K.REDUCED_MOTION] = it }
+    }
 
     private fun split(raw: String?) = raw.orEmpty().split("|").map { it.trim() }.filter { it.isNotEmpty() }
 }

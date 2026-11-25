@@ -13,7 +13,13 @@ import app.tuulit.data.remote.SyncRepository
 import kotlinx.coroutines.tasks.await
 import org.json.JSONObject
 
-/** Account deletion and local wipes. */
+sealed interface SignOutResult {
+    object Done : SignOutResult
+    /** Pending changes couldn't be backed up (usually offline). Signing out anyway would lose them. */
+    data class BackupFailed(val message: String) : SignOutResult
+}
+
+/** Account deletion, sign-out and local wipes. */
 class AccountRepository(
     private val context: Context,
     private val firebase: Firebase,
@@ -29,6 +35,39 @@ class AccountRepository(
         dao.wipe()
         media.deleteAllLocal()
         prefs.clear()
+        cancelLocalNotifications()
+    }
+
+    /** Erases the signed-in person's data from this phone, keeping only theme and reduced-motion preferences. */
+    suspend fun wipeUserData() {
+        dao.wipe()
+        media.deleteAllLocal()
+        prefs.clearUserData()
+        cancelLocalNotifications()
+        clearCache()
+    }
+
+    private fun cancelLocalNotifications() {
+        androidx.work.WorkManager.getInstance(context).cancelAllWork()
+        androidx.core.app.NotificationManagerCompat.from(context).cancelAll()
+    }
+
+    /**
+     * Signs out and removes the account's data from this phone. The account and its cloud backup are kept.
+     * 1. Backs up pending changes. If that fails and [force] is false, returns [SignOutResult.BackupFailed]
+     *    so the person can choose; nothing is erased yet.
+     * 2. Unregisters this phone's push token. 3. Signs out of Firebase. 4. Wipes local data.
+     */
+    suspend fun signOut(force: Boolean = false, unregisterDevice: suspend (String) -> Unit): SignOutResult {
+        if (auth.currentUid != null) {
+            val r = sync.sync()
+            if (r is app.tuulit.data.remote.SyncResult.Failed && !force) return SignOutResult.BackupFailed(r.message)
+            runCatching { firebase.messaging?.token?.await()?.let { t -> unregisterDevice(t) } }
+            runCatching { firebase.messaging?.deleteToken()?.await() }
+        }
+        auth.signOut()
+        wipeUserData()
+        return SignOutResult.Done
     }
 
     /**
@@ -54,7 +93,7 @@ class AccountRepository(
                 .onFailure { return AuthResult.Failed(it.message ?: "Couldn't delete the account.") }
         }
         auth.signOut()
-        wipeThisDevice()
+        wipeUserData()
         return AuthResult.Ok
     }
 
